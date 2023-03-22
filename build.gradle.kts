@@ -1,4 +1,7 @@
-import org.jetbrains.kotlin.org.fusesource.jansi.AnsiRenderer.test
+import com.github.jengelman.gradle.plugins.shadow.ShadowExtension
+import com.heroku.sdk.HerokuExtension
+import com.heroku.sdk.HerokuGradlePlugin
+
 
 val ktorVersion: String = "2.0.2"
 val kotlinVersion: String = "1.6.10"
@@ -10,6 +13,29 @@ plugins {
     application
     kotlin("jvm") version "1.6.10"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.6.10"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("com.heroku.sdk.heroku-gradle") version "3.0.0"
+}
+
+val appName = "habit-app"
+val mainClassName = "com.me.postfetcher.ApplicationKt"
+
+tasks.register("stage") {
+    dependsOn("shadowJar")
+}
+
+tasks {
+    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+        archiveBaseName.set("shadow")
+        mergeServiceFiles()
+        manifest {
+            attributes(mapOf("Main-Class" to "com.github.csolem.gradle.shadow.kotlin.example.App"))
+        }
+    }
+}
+
+configure<HerokuExtension> {
+    this.appName = appName
 }
 
 group = "com.me.postfetcher"
