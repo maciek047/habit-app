@@ -1,1 +1,1 @@
-web: java -jar build/libs/habit-app-0.0.1-all.jar
+web: java -jar build/libs/shadow-0.0.1-all.jar
