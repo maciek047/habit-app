@@ -15,14 +15,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 fun main() = runBlocking<Unit>(Dispatchers.Default) {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
     embeddedServer(
         Netty,
-        port = 8080,
-        host = "0.0.0.0",
-    ) {
-        setup(dependencies())
-    }
-        .start(wait = true)
+        port = port,
+        watchPaths = listOf("pl/maciek047/postsfetcher"),
+        module = Application::module
+    ).start(wait = true)
 }
 
 fun Application.setup(dep: Dependencies) {
@@ -35,4 +34,8 @@ fun Application.setup(dep: Dependencies) {
     routing {
         mainRouting(dep.postsFetcher)
     }
+}
+
+fun Application.module() {
+    setup(dependencies())
 }
