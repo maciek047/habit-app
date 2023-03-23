@@ -19,7 +19,7 @@ fun main() = runBlocking<Unit>(Dispatchers.Default) {
     embeddedServer(
         Netty,
         port = port,
-        watchPaths = listOf("pl/maciek047/postsfetcher"),
+        watchPaths = listOf("com/me/postfetcher"),
         module = Application::module
     ).start(wait = true)
 }

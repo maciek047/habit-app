@@ -34,6 +34,11 @@ tasks {
     }
 }
 
+tasks.withType<JavaCompile> {
+    options.isFork = true
+    options.forkOptions.jvmArgs = listOf("-Xmx512m")
+}
+
 configure<HerokuExtension> {
     this.appName = appName
 }

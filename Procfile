@@ -1,1 +1,1 @@
-web: ./gradlew run
+web: ./gradlew build && java -jar build/libs/shadow-0.0.1-all.jar
