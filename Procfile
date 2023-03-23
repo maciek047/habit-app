@@ -1,1 +1,2 @@
-web: ./gradlew build && java -jar build/libs/shadow-0.0.1-all.jar
+release: ./gradlew build
+web: java -jar build/libs/posts-fetcher-0.0.1-all.jar
