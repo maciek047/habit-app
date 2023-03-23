@@ -1,0 +1,5 @@
+build:
+  languages:
+    - java
+  config:
+    GRADLE_TASK: "shadowJar"
