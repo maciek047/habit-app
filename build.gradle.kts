@@ -95,6 +95,7 @@ dependencies {
     implementation("io.github.microutils:kotlin-logging:2.0.11")
     implementation("com.github.tomakehurst:wiremock-jre8:2.33.2")
     implementation("io.github.microutils:kotlin-logging:2.0.11")
+    implementation("org.flywaydb:flyway-core:8.5.2")
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")
     compileOnly("com.squareup.moshi:moshi-kotlin:1.13.0")

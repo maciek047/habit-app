@@ -5,12 +5,11 @@ import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.net.URI
 
 object DatabaseConfig {
-    suspend fun connect() {
+     fun connect() {
         val dbUri = URI(System.getenv("DATABASE_URL"))
 
         val username = dbUri.userInfo.split(":")[0]
@@ -18,10 +17,9 @@ object DatabaseConfig {
         val dbUrl = "jdbc:postgresql://" + dbUri.host + ':' + dbUri.port + dbUri.path + "?sslmode=require"
 
         Database.connect(dbUrl, driver = "org.postgresql.Driver", user = username, password = password)
-        // Create tables
-        newSuspendedTransaction {
-            SchemaUtils.create(Habits)
-        }
+
+         val flyway = FlywayConfig.configure()
+         flyway.migrate()
     }
 }
 
