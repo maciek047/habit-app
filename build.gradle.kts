@@ -82,6 +82,10 @@ dependencies {
     implementation("io.mockk:mockk:1.12.4")
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
+    implementation("org.jetbrains.exposed:exposed-core:0.34.1")
+    implementation("org.jetbrains.exposed:exposed-dao:0.34.1")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.34.1")
+    implementation("org.postgresql:postgresql:42.2.24")
 
     implementation("com.squareup.retrofit2:retrofit:$gsonVersion")
     implementation("com.squareup.retrofit2:adapter-rxjava2:$gsonVersion")

@@ -2,6 +2,7 @@ package com.me.postfetcher
 
 import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
+import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.mainRouting
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -32,6 +33,9 @@ fun Application.setup(dep: Dependencies) {
     }
     routing {
         mainRouting(dep.postsFetcher)
+    }
+    runBlocking {
+        DatabaseConfig.connect()
     }
 }
 
