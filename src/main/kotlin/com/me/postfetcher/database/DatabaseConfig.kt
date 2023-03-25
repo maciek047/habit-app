@@ -1,5 +1,8 @@
 package com.me.postfetcher.database
 
+import com.me.postfetcher.database.Habits.days
+import com.me.postfetcher.database.Habits.description
+import com.me.postfetcher.database.Habits.name
 import com.me.postfetcher.route.dto.HabitDto
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
@@ -7,8 +10,11 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.VarCharColumnType
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.postgresql.jdbc.PgArray
 import org.postgresql.util.PGobject
 import java.net.URI
 
@@ -26,6 +32,11 @@ object DatabaseConfig {
          flyway.migrate()
     }
 }
+
+private fun ResultRow.getDays(): IntArray {
+    return this[Habits.days]
+}
+
 
 object Habits : IntIdTable() {
     val name = varchar("name", 255)
@@ -62,11 +73,22 @@ suspend fun createHabit(name: String, description: String): Habit {
     }
 }
 
-suspend fun fetchHabits(): List<Habit> {
-    return newSuspendedTransaction {
-        Habit.all().toList()
+suspend fun fetchHabits(): List<Habit> = newSuspendedTransaction {
+
+    Habits.selectAll().toList().map { Habit(
+        id = it[Habits.id]
+    ).apply {
+            this.name = it[Habits.name]
+            this.description = it[Habits.description]
+            this.days = it[Habits.days]
+        }
+    }.toList()
+
+
+
+
     }
-}
+
 
 
 // Custom column type for integer arrays
