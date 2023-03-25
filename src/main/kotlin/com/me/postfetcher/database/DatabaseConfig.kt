@@ -1,5 +1,6 @@
 package com.me.postfetcher.database
 
+import com.me.postfetcher.route.dto.HabitDto
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -33,7 +34,17 @@ object Habits : IntIdTable() {
     // Add other columns here
 }
 
+fun Habit.toDto(): HabitDto {
+    return HabitDto(
+        id = this.id.value,
+        habitName = this.name,
+        days = this.days.toList()
+    )
+}
+
 class Habit(id: EntityID<Int>) : Entity<Int>(id) {
+
+
     companion object : EntityClass<Int, Habit>(Habits)
 
     var name by Habits.name
@@ -48,6 +59,12 @@ suspend fun createHabit(name: String, description: String): Habit {
             this.name = name
             this.description = description
         }
+    }
+}
+
+suspend fun fetchHabits(): List<Habit> {
+    return newSuspendedTransaction {
+        Habit.all().toList()
     }
 }
 
