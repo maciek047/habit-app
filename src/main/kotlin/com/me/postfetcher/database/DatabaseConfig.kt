@@ -6,6 +6,8 @@ import com.me.postfetcher.database.Habits.name
 import com.me.postfetcher.route.dto.HabitDto
 import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
+import org.jetbrains.exposed.dao.IntEntity
+import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
 import org.jetbrains.exposed.sql.Column
@@ -53,15 +55,12 @@ fun Habit.toDto(): HabitDto {
     )
 }
 
-class Habit(id: EntityID<Int>) : Entity<Int>(id) {
-
-
-    companion object : EntityClass<Int, Habit>(Habits)
+class Habit(id: EntityID<Int>) : IntEntity(id) {
+    companion object : IntEntityClass<Habit>(Habits)
 
     var name by Habits.name
     var description by Habits.description
     var days by Habits.days
-    // Add other properties here
 }
 
 suspend fun createHabit(name: String, description: String): Habit {
