@@ -14,7 +14,7 @@ import io.ktor.server.routing.get
 fun Route.mainRouting(
     postsFetcher: PostsFetcher
 ) {
-    get("/posts") {
+    get("/habits") {
         val response =
             either<AppError, PostsResponse> {
                 PostsResponse(postsFetcher.fetchPosts().bind())

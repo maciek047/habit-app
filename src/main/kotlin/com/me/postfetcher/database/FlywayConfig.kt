@@ -14,6 +14,7 @@ object FlywayConfig {
         return Flyway.configure()
             .dataSource(dbUrl, username, password)
             .locations("classpath:db/migration")
+            .baselineVersion("20230324134810")
             .baselineOnMigrate(true)
             .load()
     }

@@ -4,8 +4,11 @@ import org.jetbrains.exposed.dao.Entity
 import org.jetbrains.exposed.dao.EntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.VarCharColumnType
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.postgresql.util.PGobject
 import java.net.URI
 
 object DatabaseConfig {
@@ -26,6 +29,7 @@ object DatabaseConfig {
 object Habits : IntIdTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
+    val days: Column<IntArray> = registerColumn("days", IntArrayColumnType())
     // Add other columns here
 }
 
@@ -34,6 +38,7 @@ class Habit(id: EntityID<Int>) : Entity<Int>(id) {
 
     var name by Habits.name
     var description by Habits.description
+    var days by Habits.days
     // Add other properties here
 }
 
@@ -42,6 +47,29 @@ suspend fun createHabit(name: String, description: String): Habit {
         Habit.new {
             this.name = name
             this.description = description
+        }
+    }
+}
+
+
+// Custom column type for integer arrays
+class IntArrayColumnType : VarCharColumnType() {
+    override fun sqlType() = "integer[]"
+
+    override fun valueFromDB(value: Any): Any {
+        return when(value) {
+            is PGobject -> (value.value as String).replace("[{}]".toRegex(), "").split(",").map { it.trim().toInt() }.toIntArray()
+            else -> super.valueFromDB(value)
+        }
+    }
+
+    override fun notNullValueToDB(value: Any): Any {
+        return when (value) {
+            is IntArray -> PGobject().apply {
+                this.type = "integer[]"
+                this.value = value.joinToString(prefix = "{", postfix = "}")
+            }
+            else -> super.notNullValueToDB(value)
         }
     }
 }
