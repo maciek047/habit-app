@@ -41,12 +41,3 @@ sealed class ApiResponse {
     data class EmptyResponse(val status: HttpStatusCode) : ApiResponse()
 }
 
-suspend inline fun <reified T : Any> ApplicationCall.safeReceive(): Either<TbaError, T> =
-    withContext(Dispatchers.IO) {
-        Either.catch<T> {
-            receive(typeOf<T>())
-        }.mapLeft {
-            DeserializationError("Failed to receive object of type ${T::class.simpleName}", cause = it)
-        }
-    }
-
