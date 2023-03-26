@@ -70,3 +70,13 @@ suspend fun fetchHabits(): List<Habit> {
         Habit.all().toList()
     }
 }
+
+suspend fun editHabit(id: String, name: String, days: List<Int>, description: String = ""): Habit {
+    return newSuspendedTransaction {
+        Habit.findById(UUID.fromString(id))?.apply {
+            this.name = name
+            this.description = description
+            this.days = days.joinToString(",")
+        } ?: throw Exception("Habit not found")
+    }
+}

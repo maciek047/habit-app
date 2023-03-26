@@ -4,12 +4,15 @@ import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.mainRouting
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -33,6 +36,8 @@ fun Application.setup(dep: Dependencies) {
     }
     routing {
         mainRouting(dep.postsFetcher)
+
+
     }
     runBlocking {
         DatabaseConfig.connect()
@@ -41,4 +46,18 @@ fun Application.setup(dep: Dependencies) {
 
 fun Application.module() {
     setup(dependencies())
+    install(CORS) {
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.AccessControlAllowOrigin)
+        allowHeader(HttpHeaders.AccessControlAllowHeaders)
+        allowHeader(HttpHeaders.AccessControlAllowMethods)
+        anyHost() // @TODO Fix for production.
+    }
 }
