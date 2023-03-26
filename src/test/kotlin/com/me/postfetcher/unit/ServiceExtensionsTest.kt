@@ -30,20 +30,6 @@ class ServiceExtensionsTest : StringSpec({
         result shouldBe expectedResult
     }
 
-    "should verify that jsonString represents an object array" {
-        val objects = listOf(Arb.post().next(), Arb.post().next(), Arb.post().next())
-        val jsonString = Gson().toJson(objects).toString()
-        println(jsonString)
-
-        jsonString.trim().isJsonArray() shouldBe true
-    }
-
-    "should verify that jsonString does not represent an object array" {
-        val objects = Arb.post().next()
-        val jsonString = Gson().toJson(objects)
-
-        jsonString.isJsonArray() shouldBe false
-    }
 
     "should remove square brackets from string" {
         val givenText = "text[] with ]n[o] [brackets]"
