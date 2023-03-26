@@ -34,10 +34,23 @@ fun Application.setup(dep: Dependencies) {
             ignoreUnknownKeys = true
         })
     }
+
     routing {
         mainRouting(dep.postsFetcher)
-
-
+        install(CORS) {
+            allowMethod(HttpMethod.Options)
+            allowMethod(HttpMethod.Put)
+            allowMethod(HttpMethod.Delete)
+            allowMethod(HttpMethod.Patch)
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
+            allowHeader(HttpHeaders.Authorization)
+            allowHeader(HttpHeaders.ContentType)
+            allowHeader(HttpHeaders.AccessControlAllowOrigin)
+            allowHeader(HttpHeaders.AccessControlAllowHeaders)
+            allowHeader(HttpHeaders.AccessControlAllowMethods)
+            anyHost() // @TODO Fix for production.
+        }
     }
     runBlocking {
         DatabaseConfig.connect()
@@ -46,18 +59,4 @@ fun Application.setup(dep: Dependencies) {
 
 fun Application.module() {
     setup(dependencies())
-    install(CORS) {
-        allowMethod(HttpMethod.Options)
-        allowMethod(HttpMethod.Put)
-        allowMethod(HttpMethod.Delete)
-        allowMethod(HttpMethod.Patch)
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
-        allowHeader(HttpHeaders.Authorization)
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.AccessControlAllowOrigin)
-        allowHeader(HttpHeaders.AccessControlAllowHeaders)
-        allowHeader(HttpHeaders.AccessControlAllowMethods)
-        anyHost() // @TODO Fix for production.
-    }
 }
