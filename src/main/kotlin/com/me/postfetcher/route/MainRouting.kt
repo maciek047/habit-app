@@ -25,12 +25,4 @@ fun Route.mainRouting(
         call.apiResponse(response)
     }
 
-    get("/test") {
-        val response =
-            either<AppError, PostsResponse> {
-                createHabit("very first habit", "habit description")
-                PostsResponse("It works!")
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
-    }
 }

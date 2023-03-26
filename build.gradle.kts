@@ -1,6 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.ShadowExtension
 import com.heroku.sdk.HerokuExtension
-import com.heroku.sdk.HerokuGradlePlugin
 
 
 val ktorVersion: String = "2.0.2"
@@ -11,8 +9,8 @@ val gsonVersion: String = "2.9.0"
 
 plugins {
     application
-    kotlin("jvm") version "1.6.10"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.6.10"
+    kotlin("jvm") version "1.7.0"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.7.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.heroku.sdk.heroku-gradle") version "3.0.0"
 }
@@ -82,9 +80,9 @@ dependencies {
     implementation("io.mockk:mockk:1.12.4")
     implementation("com.google.code.gson:gson:2.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.2")
-    implementation("org.jetbrains.exposed:exposed-core:0.34.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.34.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.34.1")
+    implementation("org.jetbrains.exposed:exposed-core:0.41.1")
+    implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
     implementation("org.postgresql:postgresql:42.2.24")
 
     implementation("com.squareup.retrofit2:retrofit:$gsonVersion")
@@ -96,19 +94,28 @@ dependencies {
     implementation("com.github.tomakehurst:wiremock-jre8:2.33.2")
     implementation("io.github.microutils:kotlin-logging:2.0.11")
     implementation("org.flywaydb:flyway-core:8.5.2")
+    implementation("com.h2database:h2:2.1.214")
+    implementation("org.jetbrains.exposed:exposed-java-time:0.32.1")
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")
     compileOnly("com.squareup.moshi:moshi-kotlin:1.13.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.1")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.2")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.6.1")
 
     testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
     testImplementation("io.ktor:ktor-client-serialization:$ktorVersion")
 //    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
-    testImplementation("io.kotest:kotest-assertions-json:5.3.0")
-    testImplementation("io.kotest:kotest-runner-junit5-jvm:5.3.0")
-    testImplementation("io.kotest:kotest-property-jvm:5.3.0")
+    testImplementation("io.kotest:kotest-assertions-json:5.3.1")
+    testImplementation("io.kotest:kotest-runner-junit5-jvm:5.3.1")
+    testImplementation("io.kotest:kotest-runner-junit5:5.3.1")
+    testImplementation("io.kotest:kotest-property-jvm:5.3.1")
     testImplementation("io.kotest.extensions:kotest-assertions-ktor:1.0.3")
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
-    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.2.5")
+    testImplementation("io.kotest.extensions:kotest-assertions-arrow:1.3.0")
+    testImplementation("io.kotest:kotest-assertions-core:5.3.1")
+
+}
+
+
+tasks.test {
+    useJUnitPlatform()
 }
