@@ -12,7 +12,7 @@ import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.CORS
+import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -49,7 +49,6 @@ fun Application.setup(dep: Dependencies) {
         allowSameOrigin = true
         allowCredentials = true
         anyHost() // @TODO Fix for production.
-        allowOrigins { true }
     }
 
     routing {
