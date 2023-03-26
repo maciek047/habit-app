@@ -27,9 +27,6 @@ object DatabaseConfig {
     }
 }
 
-
-
-
 object Habits : UUIDTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
@@ -41,7 +38,7 @@ object Habits : UUIDTable() {
 
 fun Habit.toDto(): HabitDto {
     return HabitDto(
-        id = this.id.value,
+        id = this.id.value.toString(),
         habitName = this.name,
         days = this.days.split(",").map { it.toInt() },
     )

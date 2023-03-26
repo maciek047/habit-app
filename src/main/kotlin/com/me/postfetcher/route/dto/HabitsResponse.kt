@@ -1,5 +1,8 @@
 package com.me.postfetcher.route.dto
 
-data class HabitsResponse (
+import kotlinx.serialization.Serializable
+
+@Serializable
+class HabitsResponse (
     val habits: List<HabitDto>
 )
