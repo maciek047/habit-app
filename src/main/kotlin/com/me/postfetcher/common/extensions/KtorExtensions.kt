@@ -2,6 +2,7 @@ package com.me.postfetcher.common.extensions
 
 import arrow.core.Either
 import com.me.postfetcher.AppError
+import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.server.application.ApplicationCall
