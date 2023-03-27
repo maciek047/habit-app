@@ -48,7 +48,7 @@ fun Application.setup(dep: Dependencies) {
         allowHeader(HttpHeaders.AccessControlAllowMethods)
         allowSameOrigin = true
         allowCredentials = true
-        anyHost() // @TODO Fix for production.
+//        anyHost() // @TODO Fix for production.
     }
 
     routing {
