@@ -43,9 +43,6 @@ fun Application.setup(dep: Dependencies) {
         allowMethod(HttpMethod.Post)
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.AccessControlAllowOrigin)
-        allowHeader(HttpHeaders.AccessControlAllowHeaders)
-        allowHeader(HttpHeaders.AccessControlAllowMethods)
         allowCredentials = true
         allowHost("sleepy-spire-13018.herokuapp.com", schemes = listOf("https"))
 //        anyHost() // @TODO Fix for production.

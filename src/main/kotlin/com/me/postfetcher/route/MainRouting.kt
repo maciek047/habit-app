@@ -31,7 +31,6 @@ fun Route.mainRouting(
 ) {
 
     get("/habits") {
-        call.response.headers.append(HttpHeaders.AccessControlAllowOrigin, "*")
         val response =
             either<AppError, HabitsResponse> {
                HabitsResponse(fetchHabits().map { it.toDto() })
