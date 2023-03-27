@@ -46,14 +46,13 @@ fun Application.setup(dep: Dependencies) {
         allowHeader(HttpHeaders.AccessControlAllowOrigin)
         allowHeader(HttpHeaders.AccessControlAllowHeaders)
         allowHeader(HttpHeaders.AccessControlAllowMethods)
-        allowSameOrigin = true
         allowCredentials = true
+        allowHost("sleepy-spire-13018.herokuapp.com", schemes = listOf("https"))
 //        anyHost() // @TODO Fix for production.
     }
 
     routing {
         mainRouting(dep.postsFetcher)
-
     }
     runBlocking {
         DatabaseConfig.connect()
