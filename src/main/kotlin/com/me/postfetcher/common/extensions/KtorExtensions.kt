@@ -22,7 +22,6 @@ fun <T : Any> Either<AppError, T>.toApiResponse(
         logger.warn("Success Response: $it")
 
         resolveRight(it, successStatusCode)
-
     }
 ): ApiResponse = fold(ifLeft = ifLeft, ifRight = ifRight)
 

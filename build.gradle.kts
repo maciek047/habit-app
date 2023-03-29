@@ -1,7 +1,7 @@
 import com.heroku.sdk.HerokuExtension
 
 
-val ktorVersion: String = "2.2.4"
+val ktorVersion: String = "2.0.2"
 val kotlinVersion: String = "1.6.10"
 val logbackVersion: String = "1.2.11"
 val arrowVersion: String = "1.1.2"
@@ -98,7 +98,8 @@ dependencies {
     implementation("com.h2database:h2:2.1.214")
     implementation("org.jetbrains.exposed:exposed-java-time:0.32.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
-
+    implementation("io.ktor:ktor-server-cors:$ktorVersion")
+    implementation("io.ktor:ktor-http:$ktorVersion")
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")
     compileOnly("com.squareup.moshi:moshi-kotlin:1.13.0")
@@ -107,10 +108,6 @@ dependencies {
 
     testImplementation("io.ktor:ktor-server-tests:$ktorVersion")
     testImplementation("io.ktor:ktor-client-serialization:$ktorVersion")
-    implementation("io.ktor:ktor-server-cors:$ktorVersion")
-    implementation("io.ktor:ktor-http:$ktorVersion")
-
-
 //    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
     testImplementation("io.kotest:kotest-assertions-json:5.3.1")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:5.3.1")
