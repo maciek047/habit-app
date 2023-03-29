@@ -8,10 +8,22 @@ import io.ktor.http.HttpStatusCode.Companion.InternalServerError
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond
 
+
+val logger = mu.KotlinLogging.logger {}
+
+
 fun <T : Any> Either<AppError, T>.toApiResponse(
     successStatusCode: HttpStatusCode? = null,
-    ifLeft: (AppError) -> ApiResponse = { resolveLeft(it) },
-    ifRight: (T) -> ApiResponse = { resolveRight(it, successStatusCode) }
+    ifLeft: (AppError) -> ApiResponse = {
+        logger.error("Error Response: $it")
+        resolveLeft(it)
+                                        },
+    ifRight: (T) -> ApiResponse = {
+        logger.warn("Success Response: $it")
+
+        resolveRight(it, successStatusCode)
+
+    }
 ): ApiResponse = fold(ifLeft = ifLeft, ifRight = ifRight)
 
 suspend fun ApplicationCall.apiResponse(apiResponse: ApiResponse) {
