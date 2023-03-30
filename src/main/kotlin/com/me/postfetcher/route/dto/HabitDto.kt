@@ -6,5 +6,5 @@ import kotlinx.serialization.Serializable
 class HabitDto (
     val id: String,
     val habitName: String,
-    val days: List<Int>
+    val days: List<HabitDayDto>
 )

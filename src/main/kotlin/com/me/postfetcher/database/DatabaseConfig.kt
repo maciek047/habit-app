@@ -1,5 +1,6 @@
 package com.me.postfetcher.database
 
+import com.me.postfetcher.route.dto.HabitDayDto
 import com.me.postfetcher.route.dto.HabitDto
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
@@ -15,6 +16,7 @@ import java.util.UUID
 object DatabaseConfig {
      fun connect() {
         val dbUri = URI(System.getenv("DATABASE_URL"))
+//        val dbUri = URI("postgres://tufgrkxzpkzfwy:9c5936436e74c5b7135ef99dc40888ee686e33cecb4a18760aaca968cadac0dc@ec2-3-234-204-26.compute-1.amazonaws.com:5432/dd25fhordv76lb")
 
         val username = dbUri.userInfo.split(":")[0]
         val password = dbUri.userInfo.split(":")[1]
@@ -31,17 +33,24 @@ object Habits : UUIDTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
     val days = varchar("days", 255)
+    val completedDays = varchar("completed_days", 255)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     // Add other columns here
 }
 
 
 fun Habit.toDto(): HabitDto {
+    val completedDaysArr = this.completedDays.splitToIntList()
+    val habitDays  = this.days.splitToIntList().map { HabitDayDto(it, completedDaysArr.contains(it)) }
     return HabitDto(
         id = this.id.value.toString(),
         habitName = this.name,
-        days = this.days.split(",").map { it.toInt() },
+        days = habitDays
     )
+}
+
+fun String.splitToIntList(): List<Int> {
+    return if(this.isBlank()) emptyList() else this.split(",").map { it.toInt() }
 }
 
 class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -50,6 +59,7 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by Habits.name
     var description by Habits.description
     var days by Habits.days
+    var completedDays by Habits.completedDays
     var createdAt by Habits.createdAt
 }
 
@@ -59,6 +69,7 @@ suspend fun createHabit(name: String, days: List<Int>, description: String = "")
             this.name = name
             this.description = description
             this.days = days.joinToString(",")
+            this.completedDays = ""
         }
     }
 }
@@ -71,12 +82,21 @@ suspend fun fetchHabits(): List<Habit> {
     }
 }
 
-suspend fun editHabit(id: String, name: String, days: List<Int>, description: String = ""): Habit {
+suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>, description: String = ""): Habit {
     return newSuspendedTransaction {
         Habit.findById(UUID.fromString(id))?.apply {
             this.name = name
             this.description = description
             this.days = days.joinToString(",")
+            this.completedDays = completedDays.joinToString(",")
         } ?: throw Exception("Habit not found")
+    }
+}
+
+suspend fun deleteHabit(id: String): Habit {
+    return newSuspendedTransaction {
+        Habit.findById(UUID.fromString(id))?.apply {
+            this.delete()
+        } ?: throw Exception("Habit not found. Nothing to delete.")
     }
 }

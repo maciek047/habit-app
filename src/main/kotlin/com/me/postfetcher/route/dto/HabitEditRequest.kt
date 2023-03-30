@@ -1,7 +1,9 @@
 package com.me.postfetcher.route.dto
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class HabitEditRequest(
-    val id: String,
     val habitName: String,
-    val days: List<Int>
+    val days: List<HabitDayDto>
 )
