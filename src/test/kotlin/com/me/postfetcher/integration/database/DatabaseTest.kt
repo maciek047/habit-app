@@ -3,7 +3,7 @@ package com.me.postfetcher.integration.database
 import com.me.postfetcher.database.Habits
 import com.me.postfetcher.database.createHabit
 import com.me.postfetcher.database.fetchHabits
-import com.me.postfetcher.database.toDto
+import com.me.postfetcher.database.toWeeklyHabitDto
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
@@ -42,9 +42,9 @@ class DatabaseTest : StringSpec({
         val habits = newSuspendedTransaction(db = testDb) { fetchHabits() }
 
         habits.size shouldBe 2
-        habits[0].toDto().habitName shouldBe "Test habit"
-        habits[1].toDto().habitName shouldBe "Test habit2"
-        habits[0].toDto().days shouldBe listOf(1,3,5)
-        habits[1].toDto().days shouldBe listOf(2,4,6)
+        habits[0].toWeeklyHabitDto().habitName shouldBe "Test habit"
+        habits[1].toWeeklyHabitDto().habitName shouldBe "Test habit2"
+        habits[0].toWeeklyHabitDto().days shouldBe listOf(1,3,5)
+        habits[1].toWeeklyHabitDto().days shouldBe listOf(2,4,6)
     }
 })
