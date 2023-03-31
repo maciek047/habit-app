@@ -3,7 +3,7 @@ package com.me.postfetcher.route.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-class HabitsResponse (
+class WeeklyHabitsResponse (
     @Serializable
-    val habits: List<HabitDto>
+    val habits: List<WeeklyHabitDto>
 )

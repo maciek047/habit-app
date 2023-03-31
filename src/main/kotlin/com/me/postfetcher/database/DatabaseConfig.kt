@@ -1,7 +1,8 @@
 package com.me.postfetcher.database
 
 import com.me.postfetcher.route.dto.HabitDayDto
-import com.me.postfetcher.route.dto.HabitDto
+import com.me.postfetcher.route.dto.HabitForTodayDto
+import com.me.postfetcher.route.dto.WeeklyHabitDto
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -39,13 +40,22 @@ object Habits : UUIDTable() {
 }
 
 
-fun Habit.toDto(): HabitDto {
+fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
     val completedDaysArr = this.completedDays.splitToIntList()
     val habitDays  = this.days.splitToIntList().map { HabitDayDto(it, completedDaysArr.contains(it)) }
-    return HabitDto(
+    return WeeklyHabitDto(
         id = this.id.value.toString(),
         habitName = this.name,
         days = habitDays
+    )
+}
+
+fun Habit.toHabitForTodayDto(): HabitForTodayDto {
+    val completedDaysArr = this.completedDays.splitToIntList()
+    return HabitForTodayDto(
+        id = this.id.value.toString(),
+        name = this.name,
+        completed = completedDaysArr.contains(LocalDateTime.now().dayOfWeek.value)
     )
 }
 
@@ -79,6 +89,14 @@ const val ALL_WEEKDAYS = "1,2,3,4,5,6,7"
 suspend fun fetchHabits(): List<Habit> {
     return newSuspendedTransaction {
         Habit.all().toList()
+    }
+}
+
+suspend fun fetchTodayHabits(): List<Habit> {
+    return newSuspendedTransaction {
+        val today = LocalDateTime.now().dayOfWeek.value
+        //todo fix this for better performance
+        Habit.find { Habits.days like "%$today%" }.toList()
     }
 }
 

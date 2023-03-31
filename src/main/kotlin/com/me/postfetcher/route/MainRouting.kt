@@ -8,11 +8,14 @@ import com.me.postfetcher.database.createHabit
 import com.me.postfetcher.database.deleteHabit
 import com.me.postfetcher.database.editHabit
 import com.me.postfetcher.database.fetchHabits
-import com.me.postfetcher.database.toDto
+import com.me.postfetcher.database.fetchTodayHabits
+import com.me.postfetcher.database.toHabitForTodayDto
+import com.me.postfetcher.database.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
-import com.me.postfetcher.route.dto.HabitDto
+import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
-import com.me.postfetcher.route.dto.HabitsResponse
+import com.me.postfetcher.route.dto.HabitsForTodayResponse
+import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -30,37 +33,45 @@ fun Route.mainRouting(
 
     get("/habits") {
         val response =
-            either<AppError, HabitsResponse> {
-               HabitsResponse(fetchHabits().map { it.toDto() })
+            either<AppError, WeeklyHabitsResponse> {
+               WeeklyHabitsResponse(fetchHabits().map { it.toWeeklyHabitDto() })
+            }.toApiResponse(HttpStatusCode.OK)
+        call.apiResponse(response)
+    }
+
+    get("/habits/today") {
+        val response =
+            either<AppError, HabitsForTodayResponse> {
+                HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
 
     post("/habits") {
         val response =
-            either<AppError, HabitDto> {
+            either<AppError, WeeklyHabitDto> {
                 val request = call.receive<HabitCreateRequest>()
-                createHabit(request.habitName, request.days).toDto()
+                createHabit(request.habitName, request.days).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
 
     put("/habits/{id}") {
         val response =
-            either<AppError, HabitDto> {
+            either<AppError, WeeklyHabitDto> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val request = call.receive<HabitEditRequest>()
 
-                editHabit(id, request.habitName, request.days.map { it.dayOfWeek }, request.days.filter { it.completed }.map { it.dayOfWeek}).toDto()
+                editHabit(id, request.habitName, request.days.map { it.dayOfWeek }, request.days.filter { it.completed }.map { it.dayOfWeek}).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
 
     delete("/habits/{id}") {
         val response =
-            either<AppError, HabitDto> {
+            either<AppError, WeeklyHabitDto> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
-                deleteHabit(id).toDto()
+                deleteHabit(id).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
