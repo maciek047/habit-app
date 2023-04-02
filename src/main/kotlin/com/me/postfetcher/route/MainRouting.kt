@@ -51,10 +51,11 @@ fun Route.mainRouting(
 
     put("habits/today/{id}/complete/{completed}") {
         val response =
-            either<AppError, Unit> {
+            either<AppError, HabitsForTodayResponse> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
                 editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
+                HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
