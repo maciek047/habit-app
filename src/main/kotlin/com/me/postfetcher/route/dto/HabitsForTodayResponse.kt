@@ -11,6 +11,6 @@ class HabitsForTodayResponse (
 @Serializable
 class HabitForTodayDto (
     val id: String,
-    val name: String,
+    val habitName: String,
     val completed: Boolean
 )

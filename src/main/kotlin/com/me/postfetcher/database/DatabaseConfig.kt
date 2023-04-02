@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.net.URI
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -42,7 +43,11 @@ object Habits : UUIDTable() {
 
 fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
     val completedDaysArr = this.completedDays.splitToIntList()
-    val habitDays  = this.days.splitToIntList().map { HabitDayDto(it, completedDaysArr.contains(it)) }
+    val habitDays  = this.days.splitToIntList().map { HabitDayDto(
+        dayOfWeek = it,
+        dateOfWeek = getDateOfWeek(it).toString(),
+        completed = completedDaysArr.contains(it))
+    }
     return WeeklyHabitDto(
         id = this.id.value.toString(),
         habitName = this.name,
@@ -54,7 +59,7 @@ fun Habit.toHabitForTodayDto(): HabitForTodayDto {
     val completedDaysArr = this.completedDays.splitToIntList()
     return HabitForTodayDto(
         id = this.id.value.toString(),
-        name = this.name,
+        habitName = this.name,
         completed = completedDaysArr.contains(LocalDateTime.now().dayOfWeek.value)
     )
 }
@@ -117,4 +122,13 @@ suspend fun deleteHabit(id: String): Habit {
             this.delete()
         } ?: throw Exception("Habit not found. Nothing to delete.")
     }
+}
+
+
+fun getDateOfWeek(dayOfWeek: Int): LocalDate {
+    val today = LocalDate.now()
+    val currentDayOfWeek = today.dayOfWeek.value % 7 // Monday is 0, Tuesday is 1, ..., Sunday is 6
+    val daysDifference = dayOfWeek - currentDayOfWeek
+
+    return today.plusDays(daysDifference.toLong())
 }
