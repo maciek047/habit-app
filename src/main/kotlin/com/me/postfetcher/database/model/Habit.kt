@@ -104,6 +104,8 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
         days.forEach { day ->
             if (!plannedDays.contains(day)) {
                 createPlannedHabitDay(UUID.fromString(id), day)
+            } else {
+                editPlannedHabitDay(UUID.fromString(id), day, completedDays.contains(day))
             }
         }
     }
