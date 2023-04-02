@@ -4,13 +4,15 @@ import arrow.core.continuations.either
 import com.me.postfetcher.AppError
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
-import com.me.postfetcher.database.createHabit
-import com.me.postfetcher.database.deleteHabit
-import com.me.postfetcher.database.editHabit
-import com.me.postfetcher.database.fetchHabits
-import com.me.postfetcher.database.fetchTodayHabits
-import com.me.postfetcher.database.toHabitForTodayDto
-import com.me.postfetcher.database.toWeeklyHabitDto
+import com.me.postfetcher.database.model.createHabit
+import com.me.postfetcher.database.model.deleteHabit
+import com.me.postfetcher.database.model.editHabit
+import com.me.postfetcher.database.model.editTodayHabitDay
+import com.me.postfetcher.database.model.fetchHabits
+import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
+import com.me.postfetcher.database.model.fetchTodayHabits
+import com.me.postfetcher.database.model.toHabitForTodayDto
+import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
@@ -25,6 +27,7 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
+import java.util.UUID
 
 fun Route.mainRouting(
     postsFetcher: PostsFetcher
@@ -33,7 +36,7 @@ fun Route.mainRouting(
     get("/habits") {
         val response =
             either<AppError, WeeklyHabitsResponse> {
-               WeeklyHabitsResponse(fetchHabits().map { it.toWeeklyHabitDto() })
+               WeeklyHabitsResponse(fetchHabitsWithPlannedDays())
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
@@ -42,6 +45,16 @@ fun Route.mainRouting(
         val response =
             either<AppError, HabitsForTodayResponse> {
                 HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
+            }.toApiResponse(HttpStatusCode.OK)
+        call.apiResponse(response)
+    }
+
+    put("habits/today/{id}/complete/{completed}") {
+        val response =
+            either<AppError, Unit> {
+                val id = call.parameters["id"] ?: throw Exception("Habit id is required")
+                val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
+                editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
