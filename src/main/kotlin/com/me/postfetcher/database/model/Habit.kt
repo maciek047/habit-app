@@ -1,7 +1,6 @@
 package com.me.postfetcher.database.model
 
 import com.me.postfetcher.database.getDateOfWeek
-import com.me.postfetcher.database.model.Habits.days
 import com.me.postfetcher.database.splitToIntList
 import com.me.postfetcher.route.dto.HabitDayDto
 import com.me.postfetcher.route.dto.HabitForTodayDto
@@ -57,7 +56,7 @@ suspend fun createHabit(name: String, days: List<Int>, description: String = "")
 
 suspend fun fetchHabits(): List<Habit> {
     return newSuspendedTransaction {
-        Habit.all().toList()
+        Habit.all().sortedBy { Habits.createdAt }.toList()
     }
 }
 
@@ -93,7 +92,7 @@ suspend fun fetchHabitsByDay(day: Int): List<Habit> {
             Habits.id eq PlannedHabitDays.habitId
         }).slice(Habits.columns).select {
             PlannedHabitDays.day eq day
-        }.map { Habit.wrapRow(it) }
+        }.map { Habit.wrapRow(it) }.sortedBy { Habits.createdAt }
     }
 }
 

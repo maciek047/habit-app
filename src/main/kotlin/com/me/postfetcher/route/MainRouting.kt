@@ -8,7 +8,6 @@ import com.me.postfetcher.database.model.createHabit
 import com.me.postfetcher.database.model.deleteHabit
 import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
-import com.me.postfetcher.database.model.fetchHabits
 import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toHabitForTodayDto
@@ -74,7 +73,6 @@ fun Route.mainRouting(
             either<AppError, WeeklyHabitDto> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val request = call.receive<HabitEditRequest>()
-
                 editHabit(id, request.habitName, request.days.map { it.dayOfWeek }, request.days.filter { it.completed }.map { it.dayOfWeek}).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
