@@ -98,8 +98,7 @@ suspend fun fetchHabitsByDay(day: Int): List<Habit> {
 }
 
 suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>, description: String = ""): Habit {
-    return newSuspendedTransaction {
-
+    newSuspendedTransaction {
         PlannedHabitDays.deleteWhere { PlannedHabitDays.habitId eq UUID.fromString(id) and (PlannedHabitDays.day notInList days) }
         val plannedDays = fetchPlannedHabitDaysById(UUID.fromString(id)).map { it.day }
         days.forEach { day ->
@@ -107,7 +106,8 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
                 createPlannedHabitDay(UUID.fromString(id), day)
             }
         }
-
+    }
+    return newSuspendedTransaction {
         Habit.findById(UUID.fromString(id))?.apply {
             this.name = name
             this.description = description
