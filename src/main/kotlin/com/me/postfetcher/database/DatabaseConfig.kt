@@ -94,7 +94,7 @@ suspend fun fetchHabits(): List<Habit> {
 
 suspend fun fetchTodayHabits(): List<Habit> {
     return newSuspendedTransaction {
-        val today = LocalDateTime.now().dayOfWeek.value
+        val today = LocalDateTime.now().dayOfWeek.value - 1
         //todo fix this for better performance
         Habit.find { Habits.days like "%$today%" }.toList()
     }
