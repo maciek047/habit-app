@@ -10,8 +10,9 @@ class HabitTasksForTodayResponse (
 
 
 @Serializable
-class HabitTaskDto (
+class HabitTaskDto(
     val id: String,
+    val day: Int,
     val habitName: String,
     val completed: Boolean
 )

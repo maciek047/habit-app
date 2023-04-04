@@ -74,7 +74,7 @@ suspend fun fetchHabitTasksForGivenDay(day: Int): List<HabitTaskDto> {
                 val id = row[Habits.id].toString()
                 val habitName = row[Habits.name]
                 val completed = row[PlannedHabitDays.completed]
-                HabitTaskDto(id, habitName, completed)
+                HabitTaskDto(id, day, habitName, completed)
             }
     }
 }
