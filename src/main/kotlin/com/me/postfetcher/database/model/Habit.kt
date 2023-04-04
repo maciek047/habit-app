@@ -3,17 +3,17 @@ package com.me.postfetcher.database.model
 import com.me.postfetcher.database.getDateOfWeek
 import com.me.postfetcher.database.splitToIntList
 import com.me.postfetcher.route.dto.HabitDayDto
-import com.me.postfetcher.route.dto.HabitForTodayDto
+import com.me.postfetcher.route.dto.HabitTaskDto
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -60,11 +60,23 @@ suspend fun fetchHabits(): List<Habit> {
     }
 }
 
-
-suspend fun fetchTodayHabits(): List<Habit> {
+suspend fun fetchTodayHabits(): List<HabitTaskDto> {
     val today = LocalDate.now().dayOfWeek.value - 1
-    logger.warn("Today is $today")
-    return fetchHabitsByDay(today)
+    return fetchHabitTasksForGivenDay(today)
+}
+
+suspend fun fetchHabitTasksForGivenDay(day: Int): List<HabitTaskDto> {
+    return newSuspendedTransaction {
+        Habits.innerJoin(PlannedHabitDays, onColumn = { Habits.id }, otherColumn = { habitId })
+            .select { PlannedHabitDays.day eq day }
+            .orderBy(Habits.createdAt)
+            .map { row ->
+                val id = row[Habits.id].toString()
+                val habitName = row[Habits.name]
+                val completed = row[PlannedHabitDays.completed]
+                HabitTaskDto(id, habitName, completed)
+            }
+    }
 }
 
 suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
@@ -81,18 +93,6 @@ suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
                 )
             }
         )
-    }
-}
-
-
-
-suspend fun fetchHabitsByDay(day: Int): List<Habit> {
-    return newSuspendedTransaction {
-        Habits.join(PlannedHabitDays, JoinType.INNER, additionalConstraint = {
-            Habits.id eq PlannedHabitDays.habitId
-        }).slice(Habits.columns).select {
-            PlannedHabitDays.day eq day
-        }.map { Habit.wrapRow(it) }.sortedBy { Habits.createdAt }
     }
 }
 
@@ -138,14 +138,5 @@ fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
         id = this.id.value.toString(),
         habitName = this.name,
         days = habitDays
-    )
-}
-
-fun Habit.toHabitForTodayDto(): HabitForTodayDto {
-    val completedDaysArr = this.completedDays.splitToIntList()
-    return HabitForTodayDto(
-        id = this.id.value.toString(),
-        habitName = this.name,
-        completed = completedDaysArr.contains(LocalDateTime.now().dayOfWeek.value)
     )
 }

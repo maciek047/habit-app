@@ -10,12 +10,11 @@ import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
 import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
-import com.me.postfetcher.database.model.toHabitForTodayDto
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
-import com.me.postfetcher.route.dto.HabitsForTodayResponse
+import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
 import io.ktor.http.HttpStatusCode
@@ -44,21 +43,21 @@ fun Route.mainRouting(
 
     get("/habits/today") {
         val response =
-            either<AppError, HabitsForTodayResponse> {
-                HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
+            either<AppError, HabitTasksForTodayResponse> {
+                HabitTasksForTodayResponse(fetchTodayHabits())
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
 
     put("habits/today/{id}/complete/{completed}") {
         val response =
-            either<AppError, HabitsForTodayResponse> {
+            either<AppError, HabitTasksForTodayResponse> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
                 logger.warn("id: $id, completed: $completed")
                 val editedDay = editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
                 logger.warn("editedDay is completed: ${editedDay.completed}")
-                HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
+                HabitTasksForTodayResponse(fetchTodayHabits())
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }

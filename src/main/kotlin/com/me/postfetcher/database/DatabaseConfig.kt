@@ -1,20 +1,8 @@
 package com.me.postfetcher.database
 
-import com.me.postfetcher.database.model.Habit
-import com.me.postfetcher.route.dto.HabitDayDto
-import com.me.postfetcher.route.dto.HabitForTodayDto
-import com.me.postfetcher.route.dto.WeeklyHabitDto
-import org.jetbrains.exposed.dao.UUIDEntity
-import org.jetbrains.exposed.dao.UUIDEntityClass
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.`java-time`.datetime
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.net.URI
 import java.time.LocalDate
-import java.time.LocalDateTime
-import java.util.UUID
 
 object DatabaseConfig {
      fun connect() {

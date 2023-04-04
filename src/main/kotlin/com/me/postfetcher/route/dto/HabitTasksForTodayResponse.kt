@@ -3,13 +3,14 @@ package com.me.postfetcher.route.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-class HabitsForTodayResponse (
+class HabitTasksForTodayResponse (
     @Serializable
-    val habits: List<HabitForTodayDto>
+    val habits: List<HabitTaskDto>
 )
 
+
 @Serializable
-class HabitForTodayDto (
+class HabitTaskDto (
     val id: String,
     val habitName: String,
     val completed: Boolean
