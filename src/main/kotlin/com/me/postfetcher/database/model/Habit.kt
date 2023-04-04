@@ -63,9 +63,9 @@ suspend fun fetchHabits(): List<Habit> {
 
 suspend fun fetchTodayHabits(): List<Habit> {
     val today = LocalDate.now().dayOfWeek.value - 1
+    logger.warn("Today is $today")
     return fetchHabitsByDay(today)
 }
-
 
 suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
     return fetchHabits().map { habit ->

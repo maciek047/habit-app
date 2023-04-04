@@ -32,6 +32,8 @@ fun Route.mainRouting(
     postsFetcher: PostsFetcher
 ) {
 
+    val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
     get("/habits") {
         val response =
             either<AppError, WeeklyHabitsResponse> {
@@ -53,7 +55,9 @@ fun Route.mainRouting(
             either<AppError, HabitsForTodayResponse> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
-                editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
+                logger.warn("id: $id, completed: $completed")
+                val editedDay = editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
+                logger.warn("editedDay is completed: ${editedDay.completed}")
                 HabitsForTodayResponse(fetchTodayHabits().map { it.toHabitForTodayDto() })
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
@@ -86,7 +90,4 @@ fun Route.mainRouting(
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
-
-
-
 }

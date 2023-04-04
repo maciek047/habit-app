@@ -15,6 +15,9 @@ object PlannedHabitDays : UUIDTable() {
     val completed = bool("completed").default(false)
 }
 
+val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
+
 class PlannedHabitDay(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<PlannedHabitDay>(PlannedHabitDays)
 
@@ -32,12 +35,9 @@ suspend fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): Pl
 }
 
 suspend fun editTodayHabitDay(habitId: UUID, completed: Boolean): PlannedHabitDay {
-    return newSuspendedTransaction {
-        val today = LocalDateTime.now().dayOfWeek.value - 1
-        val plannedHabitDay = PlannedHabitDay.find { (PlannedHabitDays.habitId eq habitId) and (PlannedHabitDays.day eq today) }.first()
-        plannedHabitDay.completed = completed
-        plannedHabitDay
-    }
+    val today = LocalDateTime.now().dayOfWeek.value - 1
+    logger.warn("Today is $today")
+    return editPlannedHabitDay(habitId, today, completed)
 }
 
 suspend fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
