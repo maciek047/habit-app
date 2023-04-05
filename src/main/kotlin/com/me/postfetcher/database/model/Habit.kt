@@ -24,8 +24,8 @@ import java.util.UUID
 object Habits : UUIDTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
-    val days = varchar("days", 255)
-    val completedDays = varchar("completed_days", 255)
+//    val days = varchar("days", 255)
+//    val completedDays = varchar("completed_days", 255)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 
@@ -34,8 +34,6 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
 
     var name by Habits.name
     var description by Habits.description
-    var days by Habits.days
-    var completedDays by Habits.completedDays
     var createdAt by Habits.createdAt
 }
 
@@ -44,8 +42,7 @@ suspend fun createHabit(name: String, days: List<Int>, description: String = "")
         Habit.new {
             this.name = name
             this.description = description
-            this.days = days.joinToString(",")
-            this.completedDays = ""
+            this.createdAt = LocalDateTime.now()
         }
     }
     days.forEach { day ->
@@ -113,7 +110,6 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
             this.name = name
             this.description = description
             this.days = days.joinToString(",")
-            this.completedDays = completedDays.joinToString(",")
         } ?: throw Exception("Habit not found")
     }
 }
@@ -127,13 +123,15 @@ suspend fun deleteHabit(id: String): Habit {
     }
 }
 
-fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
-    val completedDaysArr = this.completedDays.splitToIntList()
-    val habitDays  = this.days.splitToIntList().map { HabitDayDto(
-        dayOfWeek = it,
-        dateOfWeek = getDateOfWeek(it+1).toString(),
-        completed = completedDaysArr.contains(it))
+suspend fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
+    val habitDays = fetchPlannedHabitDaysById(this.id.value).map {
+        HabitDayDto(
+            dayOfWeek = it.day,
+            dateOfWeek = getDateOfWeek(it.day + 1).toString(),
+            completed = it.completed
+        )
     }
+
     return WeeklyHabitDto(
         id = this.id.value.toString(),
         habitName = this.name,
