@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 class HabitTasksForTodayResponse (
     @Serializable
-    val habits: List<HabitTaskDto>
+    val habits: List<HabitTaskDto>,
+    val todayIndex: Int
 )
 
 
