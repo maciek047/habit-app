@@ -77,7 +77,12 @@ fun Route.mainRouting(
             either<AppError, WeeklyHabitDto> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val request = call.receive<HabitEditRequest>()
-                editHabit(id, request.habitName, request.days.map { it.dayOfWeek }, request.days.filter { it.completed }.map { it.dayOfWeek}).toWeeklyHabitDto()
+                editHabit(
+                    id = id,
+                    name = request.habitName,
+                    days = request.days.map { it.dayOfWeek },
+                    completedDays = request.days.filter { it.completed }.map { it.dayOfWeek }
+                ).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
