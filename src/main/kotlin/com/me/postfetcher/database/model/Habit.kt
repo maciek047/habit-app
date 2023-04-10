@@ -85,7 +85,7 @@ suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
             days = plannedDays.map {
                 HabitDayDto(
                     dayOfWeek = it.day,
-                    dateOfWeek = getDateOfWeek(it.day + 1).toString(),
+                    dateOfWeek = getDateOfWeek(it.day + 1),
                     completed = it.completed
                 )
             }
@@ -131,7 +131,6 @@ suspend fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
             completed = it.completed
         )
     }
-
     return WeeklyHabitDto(
         id = this.id.value.toString(),
         habitName = this.name,

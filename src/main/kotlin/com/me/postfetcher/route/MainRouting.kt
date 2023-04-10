@@ -25,6 +25,7 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
+import java.time.LocalDate
 import java.util.UUID
 
 fun Route.mainRouting(
@@ -44,7 +45,7 @@ fun Route.mainRouting(
     get("/habits/today") {
         val response =
             either<AppError, HabitTasksForTodayResponse> {
-                HabitTasksForTodayResponse(fetchTodayHabits())
+                HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
@@ -57,7 +58,7 @@ fun Route.mainRouting(
                 logger.warn("id: $id, completed: $completed")
                 val editedDay = editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
                 logger.warn("editedDay is completed: ${editedDay.completed}")
-                HabitTasksForTodayResponse(fetchTodayHabits())
+                HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
@@ -76,7 +77,12 @@ fun Route.mainRouting(
             either<AppError, WeeklyHabitDto> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
                 val request = call.receive<HabitEditRequest>()
-                editHabit(id, request.habitName, request.days.map { it.dayOfWeek }, request.days.filter { it.completed }.map { it.dayOfWeek}).toWeeklyHabitDto()
+                editHabit(
+                    id = id,
+                    name = request.habitName,
+                    days = request.days.map { it.dayOfWeek },
+                    completedDays = request.days.filter { it.completed }.map { it.dayOfWeek }
+                ).toWeeklyHabitDto()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }

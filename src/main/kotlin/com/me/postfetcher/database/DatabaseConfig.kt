@@ -3,6 +3,7 @@ package com.me.postfetcher.database
 import org.jetbrains.exposed.sql.Database
 import java.net.URI
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 object DatabaseConfig {
      fun connect() {
@@ -24,10 +25,11 @@ fun String.splitToIntList(): List<Int> {
     return if(this.isBlank()) emptyList() else this.split(",").map { it.toInt() }
 }
 
-fun getDateOfWeek(dayOfWeek: Int): LocalDate {
+fun getDateOfWeek(dayOfWeek: Int): String {
     val today = LocalDate.now()
     val currentDayOfWeek = today.dayOfWeek.value % 7 // Monday is 0, Tuesday is 1, ..., Sunday is 6
     val daysDifference = dayOfWeek - currentDayOfWeek
 
-    return today.plusDays(daysDifference.toLong())
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    return today.plusDays(daysDifference.toLong()).format(formatter)
 }
