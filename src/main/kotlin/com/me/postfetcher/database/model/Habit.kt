@@ -113,16 +113,12 @@ suspend fun fetchHabitMetrics(): HabitMetricsResponse {
             .groupBy(executionDate)
             .map { row ->
                 val date = row[executionDate]
-                // Count how many executions are completed
-//                val completed: Int = row[HabitExecutions.alias("completed_count")[Column(HabitExecutions, "completed_count", IntegerColumnType())]]
                 val completed: Int = row[completedCountAlias] ?: 0
-                // Count the total number of executions for the given date
-//                val totalCount: Int = row[HabitExecutions.alias("total_count")[Column(HabitExecutions, "total_count", IntegerColumnType())]]
                 val totalCount: Long = row[totalCountAlias]
                 HabitMetricsDto(date.toString(), completed, totalCount.toInt())
             }
     }
-    return HabitMetricsResponse(formatDate(startDate), formatDate(endDate), daysList)
+    return HabitMetricsResponse(startDate.toString(), endDate.toString(), daysList)
 }
 
 suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
