@@ -8,6 +8,7 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.`java-time`.date
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.UUID
@@ -29,8 +30,8 @@ class HabitExecution(id: EntityID<UUID>) : UUIDEntity(id) {
 }
 
 suspend fun ensureHabitExecutionsForCurrentWeekExist() {
-    val startDate = getDateOfWeek(1).atStartOfDay()
-    val endDate = LocalDateTime.of(getDateOfWeek(7), LocalTime.MAX)
+    val startDate = getDateOfWeek(1)
+    val endDate = getDateOfWeek(7)
 
     if(getHabitExecutionsByDateRange(startDate, endDate).isEmpty()) {
         newSuspendedTransaction {
@@ -41,7 +42,7 @@ suspend fun ensureHabitExecutionsForCurrentWeekExist() {
     }
 }
 
-suspend fun getHabitExecutionsByDateRange(startDate: LocalDateTime, endDate: LocalDateTime): List<HabitExecution> {
+suspend fun getHabitExecutionsByDateRange(startDate: LocalDate, endDate: LocalDate): List<HabitExecution> {
     return newSuspendedTransaction {
         HabitExecution.find {
                     (HabitExecutions.executionDate greaterEq startDate) and
