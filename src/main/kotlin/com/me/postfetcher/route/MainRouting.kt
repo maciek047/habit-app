@@ -39,6 +39,7 @@ fun Route.mainRouting(
     get("/habits/completion-metrics") {
         val response =
             either<AppError, HabitMetricsResponse> {
+                logger.info("fetching habit metrics")
                 fetchHabitMetrics()
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
