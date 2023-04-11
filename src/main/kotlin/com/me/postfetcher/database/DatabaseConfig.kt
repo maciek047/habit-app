@@ -21,15 +21,15 @@ object DatabaseConfig {
     }
 }
 
-fun String.splitToIntList(): List<Int> {
-    return if(this.isBlank()) emptyList() else this.split(",").map { it.toInt() }
-}
-
-fun getDateOfWeek(dayOfWeek: Int): String {
+fun getDateOfWeek(dayOfWeek: Int): LocalDate {
     val today = LocalDate.now()
-    val currentDayOfWeek = today.dayOfWeek.value % 7 // Monday is 0, Tuesday is 1, ..., Sunday is 6
+    val currentDayOfWeek = today.dayOfWeek.value % 7
     val daysDifference = dayOfWeek - currentDayOfWeek
 
+    return today.plusDays(daysDifference.toLong())
+}
+
+fun formatDate(date: LocalDate): String {
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    return today.plusDays(daysDifference.toLong()).format(formatter)
+    return date.format(formatter)
 }

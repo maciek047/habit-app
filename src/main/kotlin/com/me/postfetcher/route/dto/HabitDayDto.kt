@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 class HabitDayDto (
     val dayOfWeek: Int,
     val dateOfWeek: String,
-    val completed: Boolean
+    val completed: Boolean,
+    val isBeforeCreationDate: Boolean
 )
