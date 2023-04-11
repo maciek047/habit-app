@@ -14,6 +14,7 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Case
+import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.IntegerColumnType
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -92,27 +93,33 @@ suspend fun fetchHabitMetrics(): HabitMetricsResponse {
     val startDate = LocalDate.now().minusMonths(3)
     val endDate = LocalDate.now()
 
+    val completedCountAlias = Sum(
+        Case()
+            .When(HabitExecutions.completed eq true, intLiteral(1))
+            .Else(intLiteral(0)),
+        IntegerColumnType()
+    ).alias("completed_count")
+
+    val totalCountAlias = executionDate.count().alias("total_count")
+
     val daysList =  newSuspendedTransaction {
         HabitExecutions
             .slice(
                 executionDate,
-                Sum(
-                    Case()
-                        .When(HabitExecutions.completed eq true, intLiteral(1))
-                        .Else(intLiteral(0)),
-                    IntegerColumnType()
-                ).alias("completed_count"),
-                executionDate.count().alias("total_count")
+                completedCountAlias,
+                totalCountAlias
             )
             .select { executionDate.between(startDate, endDate) }
             .groupBy(executionDate)
             .map { row ->
                 val date = row[executionDate]
                 // Count how many executions are completed
-                val completed: Int = row[IntegerColumnType().getByPropertyName("completed_count") as Expression<Int>]
+//                val completed: Int = row[HabitExecutions.alias("completed_count")[Column(HabitExecutions, "completed_count", IntegerColumnType())]]
+                val completed: Int = row[completedCountAlias] ?: 0
                 // Count the total number of executions for the given date
-                val totalCount: Int = row[IntegerColumnType().getByPropertyName("total_count") as Expression<Int>]
-                HabitMetricsDto(date.toString(), completed, totalCount)
+//                val totalCount: Int = row[HabitExecutions.alias("total_count")[Column(HabitExecutions, "total_count", IntegerColumnType())]]
+                val totalCount: Long = row[totalCountAlias]
+                HabitMetricsDto(date.toString(), completed, totalCount.toInt())
             }
     }
     return HabitMetricsResponse(formatDate(startDate), formatDate(endDate), daysList)
