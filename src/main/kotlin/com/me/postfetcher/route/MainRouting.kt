@@ -8,12 +8,14 @@ import com.me.postfetcher.database.model.createHabit
 import com.me.postfetcher.database.model.deleteHabit
 import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
+import com.me.postfetcher.database.model.fetchHabitMetrics
 import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
+import com.me.postfetcher.route.dto.HabitMetricsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
@@ -33,6 +35,14 @@ fun Route.mainRouting(
 ) {
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
+    get("/habits/completion-metrics") {
+        val response =
+            either<AppError, HabitMetricsResponse> {
+                fetchHabitMetrics()
+            }.toApiResponse(HttpStatusCode.OK)
+        call.apiResponse(response)
+    }
 
     get("/habits") {
         val response =

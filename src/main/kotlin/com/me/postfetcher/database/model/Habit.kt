@@ -1,31 +1,42 @@
 package com.me.postfetcher.database.model
 
+import com.me.postfetcher.common.extensions.getByPropertyName
+import com.me.postfetcher.database.formatDate
 import com.me.postfetcher.database.getDateOfWeek
-import com.me.postfetcher.database.splitToIntList
+import com.me.postfetcher.database.model.HabitExecutions.executionDate
 import com.me.postfetcher.route.dto.HabitDayDto
+import com.me.postfetcher.route.dto.HabitMetricsDto
+import com.me.postfetcher.route.dto.HabitMetricsResponse
 import com.me.postfetcher.route.dto.HabitTaskDto
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.Case
+import org.jetbrains.exposed.sql.Expression
+import org.jetbrains.exposed.sql.IntegerColumnType
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
+import org.jetbrains.exposed.sql.Sum
+import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.count
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.intLiteral
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 object Habits : UUIDTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
-//    val days = varchar("days", 255)
-//    val completedDays = varchar("completed_days", 255)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 
@@ -76,7 +87,39 @@ suspend fun fetchHabitTasksForGivenDay(day: Int): List<HabitTaskDto> {
     }
 }
 
+suspend fun fetchHabitMetrics(): HabitMetricsResponse {
+    ensureHabitExecutionsForCurrentWeekExist()
+    val startDate = LocalDate.now().minusMonths(3)
+    val endDate = LocalDate.now()
+
+    val daysList =  newSuspendedTransaction {
+        HabitExecutions
+            .slice(
+                executionDate,
+                Sum(
+                    Case()
+                        .When(HabitExecutions.completed eq true, intLiteral(1))
+                        .Else(intLiteral(0)),
+                    IntegerColumnType()
+                ).alias("completed_count"),
+                executionDate.count().alias("total_count")
+            )
+            .select { executionDate.between(startDate, endDate) }
+            .groupBy(executionDate)
+            .map { row ->
+                val date = row[executionDate]
+                // Count how many executions are completed
+                val completed: Int = row[IntegerColumnType().getByPropertyName("completed_count") as Expression<Int>]
+                // Count the total number of executions for the given date
+                val totalCount: Int = row[IntegerColumnType().getByPropertyName("total_count") as Expression<Int>]
+                HabitMetricsDto(date.toString(), completed, totalCount)
+            }
+    }
+    return HabitMetricsResponse(formatDate(startDate), formatDate(endDate), daysList)
+}
+
 suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
+    ensureHabitExecutionsForCurrentWeekExist()
     return fetchHabits().map { habit ->
         val plannedDays = fetchPlannedHabitDaysById(habit.id.value)
         WeeklyHabitDto(
@@ -85,17 +128,30 @@ suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
             days = plannedDays.map {
                 HabitDayDto(
                     dayOfWeek = it.day,
-                    dateOfWeek = getDateOfWeek(it.day + 1),
-                    completed = it.completed
+                    dateOfWeek = formatDate(getDateOfWeek(it.day + 1)),
+                    completed = it.completed,
+                    isBeforeCreationDate = getDateOfWeek(it.day + 1).isBefore(habit.createdAt.toLocalDate())
                 )
             }
         )
     }
 }
 
-suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>, description: String = ""): Habit {
+val DAYS_OF_WEEK = listOf(0,1,2,3,4,5,6)
+
+suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>): Habit {
     newSuspendedTransaction {
-        PlannedHabitDays.deleteWhere { PlannedHabitDays.habitId eq UUID.fromString(id) and (PlannedHabitDays.day notInList days) }
+        val today = LocalDate.now().dayOfWeek.value - 1
+        val habitDaysToDelete = DAYS_OF_WEEK.filter { !days.contains(it) }
+            .map { getDateOfWeek(it + 1) }
+            .filter { it.isAfter(getDateOfWeek(today).minus(12, ChronoUnit.HOURS)) }
+        HabitExecutions.deleteWhere {
+            habitId eq UUID.fromString(id) and
+                    (executionDate inList habitDaysToDelete) and
+                    (completed eq false) //do not delete execution if it was completed
+        }
+
+        PlannedHabitDays.deleteWhere { habitId eq UUID.fromString(id) and (day notInList days) }
         val plannedDays = fetchPlannedHabitDaysById(UUID.fromString(id)).map { it.day }
         days.forEach { day ->
             if (!plannedDays.contains(day)) {
@@ -109,14 +165,24 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
         Habit.findById(UUID.fromString(id))?.apply {
             this.name = name
             this.description = description
-            this.days = days.joinToString(",")
         } ?: throw Exception("Habit not found")
     }
 }
 
 suspend fun deleteHabit(id: String): Habit {
     return newSuspendedTransaction {
-        PlannedHabitDays.deleteWhere { PlannedHabitDays.habitId eq UUID.fromString(id) }
+
+        val today = LocalDate.now().dayOfWeek.value - 1
+        val habitDaysToDelete = DAYS_OF_WEEK
+            .map { getDateOfWeek(it + 1) }
+            .filter { it.isAfter(getDateOfWeek(today).minus(12, ChronoUnit.HOURS)) }
+        HabitExecutions.deleteWhere {
+            habitId eq UUID.fromString(id) and
+                    (executionDate inList habitDaysToDelete) and
+                    (completed eq false) //do not delete execution if it was completed
+        }
+
+        PlannedHabitDays.deleteWhere { habitId eq UUID.fromString(id) }
         Habit.findById(UUID.fromString(id))?.apply {
             this.delete()
         } ?: throw Exception("Habit not found. Nothing to delete.")
@@ -127,8 +193,9 @@ suspend fun Habit.toWeeklyHabitDto(): WeeklyHabitDto {
     val habitDays = fetchPlannedHabitDaysById(this.id.value).map {
         HabitDayDto(
             dayOfWeek = it.day,
-            dateOfWeek = getDateOfWeek(it.day + 1).toString(),
-            completed = it.completed
+            dateOfWeek = formatDate(getDateOfWeek(it.day + 1)),
+            completed = it.completed,
+            isBeforeCreationDate = getDateOfWeek(it.day + 1).isBefore(createdAt.toLocalDate())
         )
     }
     return WeeklyHabitDto(

@@ -1,5 +1,6 @@
 package com.me.postfetcher.database.model
 
+import com.me.postfetcher.database.getDateOfWeek
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -30,6 +31,13 @@ suspend fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): Pl
     return newSuspendedTransaction {
         val plannedHabitDay = PlannedHabitDay.find { (PlannedHabitDays.habitId eq habitId) and (PlannedHabitDays.day eq day) }.first()
         plannedHabitDay.completed = completed
+
+        val habitDate = getDateOfWeek(day + 1)
+        val habitExecution = HabitExecution.find {
+            (HabitExecutions.plannedHabitDayId eq plannedHabitDay.id.value) and HabitExecutions.executionDate.eq(habitDate)
+        }.first()
+        habitExecution.completed = completed
+
         plannedHabitDay
     }
 }
@@ -42,30 +50,23 @@ suspend fun editTodayHabitDay(habitId: UUID, completed: Boolean): PlannedHabitDa
 
 suspend fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
     return newSuspendedTransaction {
-        PlannedHabitDay.new {
+        val plannedDay = PlannedHabitDay.new {
             this.habitId = EntityID(habitId, Habits)
             this.day = day
             this.completed = false
         }
+
+        val dateOfExecution = getDateOfWeek(day + 1)
+        if(!dateOfExecution.isBefore(LocalDateTime.now().toLocalDate())) {
+            createHabitExecution(habitId, plannedDay.id.value, day)
+        }
+
+        plannedDay
     }
 }
 
 suspend fun fetchPlannedHabitDaysById(habitId: UUID): List<PlannedHabitDay> {
     return newSuspendedTransaction {
         PlannedHabitDay.find { PlannedHabitDays.habitId eq habitId }.toList()
-    }
-}
-
-suspend fun fetchPlannedHabitDayByIdAndDay(habitId: UUID, day: Int): PlannedHabitDay {
-    return newSuspendedTransaction {
-        PlannedHabitDay.find { (PlannedHabitDays.habitId eq habitId) and (PlannedHabitDays.day eq day) }.first()
-    }
-}
-
-suspend fun fetchPlannedHabitDaysByDay(day: Int): List<PlannedHabitDay> {
-    return newSuspendedTransaction {
-        PlannedHabitDay.find { PlannedHabitDays.day eq day }.groupBy { it.habitId }
-            .map { it.value.first() }
-            .toList()
     }
 }
