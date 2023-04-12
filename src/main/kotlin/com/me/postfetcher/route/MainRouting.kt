@@ -4,11 +4,13 @@ import arrow.core.continuations.either
 import com.me.postfetcher.AppError
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
+import com.me.postfetcher.common.extensions.toLocalDate
 import com.me.postfetcher.database.model.createHabit
 import com.me.postfetcher.database.model.deleteHabit
 import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
 import com.me.postfetcher.database.model.fetchHabitMetrics
+import com.me.postfetcher.database.model.fetchHabitStats
 import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toWeeklyHabitDto
@@ -16,6 +18,8 @@ import com.me.postfetcher.route.dto.HabitCreateRequest
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
 import com.me.postfetcher.route.dto.HabitMetricsResponse
+import com.me.postfetcher.route.dto.HabitStatsRequest
+import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
@@ -35,6 +39,15 @@ fun Route.mainRouting(
 ) {
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
+    get("/habits/stats") {
+        val response =
+            either<AppError, HabitStatsResponse> {
+                val request = call.receive<HabitStatsRequest>()
+                HabitStatsResponse(fetchHabitStats(request.startDate.toLocalDate(), request.endDate.toLocalDate()))
+            }.toApiResponse(HttpStatusCode.OK)
+        call.apiResponse(response)
+    }
 
     get("/habits/completion-metrics") {
         val response =

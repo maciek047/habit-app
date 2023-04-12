@@ -1,5 +1,6 @@
 package com.me.postfetcher.common.extensions
 
+import java.time.LocalDate
 import java.util.Locale
 
 inline fun <reified T> T.getByPropertyName(propertyName: String): Any? {
@@ -21,3 +22,5 @@ fun String.isJsonArray(): Boolean = REGEX_JSON_ARRAY.toRegex().matches(this)
 
 const val REGEX_JSON_ARRAY = """\[\s*([^\[\]]*?)\s*\]"""
 const val REGEX_MULTIPLE_SEPARATORS = """\\\\+"""
+
+fun String.toLocalDate(): LocalDate = LocalDate.parse(this)

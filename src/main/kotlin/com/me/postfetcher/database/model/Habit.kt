@@ -7,6 +7,7 @@ import com.me.postfetcher.database.model.HabitExecutions.executionDate
 import com.me.postfetcher.route.dto.HabitDayDto
 import com.me.postfetcher.route.dto.HabitMetricsDto
 import com.me.postfetcher.route.dto.HabitMetricsResponse
+import com.me.postfetcher.route.dto.HabitStatsDto
 import com.me.postfetcher.route.dto.HabitTaskDto
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import org.jetbrains.exposed.dao.UUIDEntity
@@ -17,6 +18,7 @@ import org.jetbrains.exposed.sql.Case
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.IntegerColumnType
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.notInList
@@ -119,6 +121,35 @@ suspend fun fetchHabitMetrics(): HabitMetricsResponse {
             }
     }
     return HabitMetricsResponse(startDate.toString(), endDate.toString(), daysList)
+}
+
+suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<HabitStatsDto> {
+    val completedCountAlias = Sum(
+        Case()
+            .When(HabitExecutions.completed eq true, intLiteral(1))
+            .Else(intLiteral(0)),
+        IntegerColumnType()
+    ).alias("completed_count")
+
+    val totalCountAlias = executionDate.count().alias("total_count")
+
+    return  newSuspendedTransaction {
+        HabitExecutions.join(Habits, JoinType.INNER, onColumn = HabitExecutions.habitId, otherColumn = Habits.id)
+            .slice(
+                Habits.id,
+                Habits.name,
+                completedCountAlias,
+                totalCountAlias
+            )
+            .select { executionDate.between(startDate, endDate) }
+            .groupBy(Habits.id, Habits.name)
+            .map { row ->
+                val habitName = row[Habits.name]
+                val completed: Int = row[completedCountAlias] ?: 0
+                val totalCount: Long = row[totalCountAlias]
+                HabitStatsDto(habitName, completed, totalCount.toInt())
+            }
+    }
 }
 
 suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
