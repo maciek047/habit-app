@@ -36,6 +36,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+import javax.xml.datatype.DatatypeConstants.DAYS
 
 object Habits : UUIDTable() {
     val name = varchar("name", 255)
@@ -209,7 +210,7 @@ suspend fun deleteHabit(id: String): Habit {
         val today = LocalDate.now().dayOfWeek.value - 1
         val habitDaysToDelete = DAYS_OF_WEEK
             .map { getDateOfWeek(it + 1) }
-            .filter { it.isAfter(getDateOfWeek(today).minus(12, ChronoUnit.HOURS)) }
+            .filter { it.isAfter(getDateOfWeek(today).minusDays(1)) }
         HabitExecutions.deleteWhere {
             habitId eq UUID.fromString(id) and
                     (executionDate inList habitDaysToDelete) and
