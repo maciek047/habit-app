@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.`java-time`.date
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -13,21 +14,29 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.UUID
 
-object HabitExecutions : UUIDTable() {
-    val habitId = reference("habit_id", Habits)
-    val plannedHabitDayId = reference("planned_habit_day_id", PlannedHabitDays)
-    val executionDate = date("completion_date")
-    val completed = bool("completed").default(false)
-}
+    object HabitExecutions : UUIDTable() {
+        val habitId = reference(
+            name = "habit_id",
+            foreign = Habits,
+            onDelete = ReferenceOption.SET_NULL
+        ).nullable()
+        val plannedHabitDayId = reference(
+            name = "planned_habit_day_id",
+            foreign = PlannedHabitDays,
+            onDelete = ReferenceOption.SET_NULL
+        ).nullable()
+        val executionDate = date("completion_date")
+        val completed = bool("completed").default(false)
+    }
 
-class HabitExecution(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<HabitExecution>(HabitExecutions)
+    class HabitExecution(id: EntityID<UUID>) : UUIDEntity(id) {
+        companion object : UUIDEntityClass<HabitExecution>(HabitExecutions)
 
-    var habitId by HabitExecutions.habitId
-    var plannedHabitDayId by HabitExecutions.plannedHabitDayId
-    var executionDate by HabitExecutions.executionDate
-    var completed by HabitExecutions.completed
-}
+        var habitId by HabitExecutions.habitId
+        var plannedHabitDayId by HabitExecutions.plannedHabitDayId
+        var executionDate by HabitExecutions.executionDate
+        var completed by HabitExecutions.completed
+    }
 
 suspend fun ensureHabitExecutionsForCurrentWeekExist() {
     val startDate = getDateOfWeek(1)
