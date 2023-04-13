@@ -177,7 +177,7 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
         val today = LocalDate.now().dayOfWeek.value - 1
         val habitDaysToDelete = DAYS_OF_WEEK.filter { !days.contains(it) }
             .map { getDateOfWeek(it + 1) }
-            .filter { it.isAfter(getDateOfWeek(today).minus(12, ChronoUnit.HOURS)) }
+            .filter { it.isAfter(getDateOfWeek(today).minusDays(1)) }
         HabitExecutions.deleteWhere {
             habitId eq UUID.fromString(id) and
                     (executionDate inList habitDaysToDelete) and
