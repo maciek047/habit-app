@@ -1,37 +1,12 @@
 package com.me.postfetcher.route
 
 
-import arrow.core.continuations.either
 import com.auth0.json.auth.UserInfo
-import com.me.postfetcher.AppError
-import com.me.postfetcher.client.toResponseString
-import com.me.postfetcher.common.extensions.apiResponse
-import com.me.postfetcher.common.extensions.toApiResponse
-import com.me.postfetcher.common.extensions.toLocalDate
-import com.me.postfetcher.database.model.createHabit
 import com.me.postfetcher.database.model.createUserIfNotExists
-import com.me.postfetcher.database.model.deleteHabit
-import com.me.postfetcher.database.model.editHabit
-import com.me.postfetcher.database.model.editTodayHabitDay
-import com.me.postfetcher.database.model.fetchHabitMetrics
-import com.me.postfetcher.database.model.fetchHabitStats
-import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
-import com.me.postfetcher.database.model.fetchTodayHabits
-import com.me.postfetcher.database.model.toWeeklyHabitDto
-import com.me.postfetcher.route.dto.HabitCreateRequest
-import com.me.postfetcher.route.dto.WeeklyHabitDto
-import com.me.postfetcher.route.dto.HabitEditRequest
-import com.me.postfetcher.route.dto.HabitMetricsResponse
-import com.me.postfetcher.route.dto.HabitStatsRequest
-import com.me.postfetcher.route.dto.HabitStatsResponse
-import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
-import com.me.postfetcher.route.dto.WeeklyHabitsResponse
-import com.me.postfetcher.service.PostsFetcher
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
-
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.call
 import io.ktor.server.auth.OAuthAccessTokenResponse

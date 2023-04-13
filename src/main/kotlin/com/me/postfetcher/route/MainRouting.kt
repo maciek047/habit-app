@@ -15,12 +15,12 @@ import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
-import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitEditRequest
 import com.me.postfetcher.route.dto.HabitMetricsResponse
 import com.me.postfetcher.route.dto.HabitStatsRequest
 import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
+import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
 import io.ktor.http.HttpStatusCode
@@ -43,7 +43,7 @@ fun Route.mainRouting(
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
 
-    get("/habits/stats") {
+    post("/habits/stats") {
         val response =
             either<AppError, HabitStatsResponse> {
                 val request = call.receive<HabitStatsRequest>()
