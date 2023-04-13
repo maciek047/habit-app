@@ -27,8 +27,7 @@ class PlannedHabitDay(id: EntityID<UUID>) : UUIDEntity(id) {
     var completed by PlannedHabitDays.completed
 }
 
-suspend fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): PlannedHabitDay {
-    return newSuspendedTransaction {
+fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): PlannedHabitDay {
         val plannedHabitDay = PlannedHabitDay.find { (PlannedHabitDays.habitId eq habitId) and (PlannedHabitDays.day eq day) }.first()
         plannedHabitDay.completed = completed
 
@@ -37,19 +36,18 @@ suspend fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): Pl
             (HabitExecutions.plannedHabitDayId eq plannedHabitDay.id.value) and HabitExecutions.executionDate.eq(habitDate)
         }.first()
         habitExecution.completed = completed
-
-        plannedHabitDay
-    }
+        return plannedHabitDay
 }
 
 suspend fun editTodayHabitDay(habitId: UUID, completed: Boolean): PlannedHabitDay {
     val today = LocalDateTime.now().dayOfWeek.value - 1
     logger.warn("Today is $today")
-    return editPlannedHabitDay(habitId, today, completed)
+    return newSuspendedTransaction {
+        editPlannedHabitDay(habitId, today, completed)
+    }
 }
 
-suspend fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
-    return newSuspendedTransaction {
+fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
         val plannedDay = PlannedHabitDay.new {
             this.habitId = EntityID(habitId, Habits)
             this.day = day
@@ -61,8 +59,7 @@ suspend fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
             createHabitExecution(habitId, plannedDay.id.value, day)
         }
 
-        plannedDay
-    }
+        return plannedDay
 }
 
 suspend fun fetchPlannedHabitDaysById(habitId: UUID): List<PlannedHabitDay> {

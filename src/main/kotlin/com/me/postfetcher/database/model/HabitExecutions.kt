@@ -60,14 +60,13 @@ suspend fun getHabitExecutionsByDateRange(startDate: LocalDate, endDate: LocalDa
     }
 }
 
-suspend fun createHabitExecution(habitId: UUID, plannedHabitDayId: UUID, dayOfWeek: Int, completed: Boolean = false): HabitExecution {
+fun createHabitExecution(habitId: UUID, plannedHabitDayId: UUID, dayOfWeek: Int, completed: Boolean = false): HabitExecution {
     val dateOfExecution = getDateOfWeek(dayOfWeek + 1)
-    return newSuspendedTransaction {
-        HabitExecution.new {
+        return HabitExecution.new {
             this.habitId = EntityID(habitId, Habits)
             this.plannedHabitDayId = EntityID(plannedHabitDayId, PlannedHabitDays)
             this.executionDate = dateOfExecution
             this.completed = completed
         }
-    }
+
 }

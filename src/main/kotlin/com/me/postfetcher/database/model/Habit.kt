@@ -1,6 +1,5 @@
 package com.me.postfetcher.database.model
 
-import com.me.postfetcher.common.extensions.getByPropertyName
 import com.me.postfetcher.database.formatDate
 import com.me.postfetcher.database.getDateOfWeek
 import com.me.postfetcher.database.model.HabitExecutions.executionDate
@@ -15,8 +14,6 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Case
-import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.IntegerColumnType
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -36,7 +33,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-import javax.xml.datatype.DatatypeConstants.DAYS
 
 object Habits : UUIDTable() {
     val name = varchar("name", 255)
@@ -53,17 +49,19 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
 }
 
 suspend fun createHabit(name: String, days: List<Int>, description: String = ""): Habit {
-    val createdHabit = newSuspendedTransaction {
+    return newSuspendedTransaction {
+    val createdHabit =
         Habit.new {
             this.name = name
             this.description = description
             this.createdAt = LocalDateTime.now()
         }
-    }
+
     days.forEach { day ->
         createPlannedHabitDay(createdHabit.id.value, day)
     }
-    return createdHabit
+     createdHabit
+    }
 }
 
 suspend fun fetchHabits(): List<Habit> {
@@ -175,7 +173,7 @@ suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
 val DAYS_OF_WEEK = listOf(0,1,2,3,4,5,6)
 
 suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>): Habit {
-    newSuspendedTransaction {
+    return newSuspendedTransaction {
         val today = LocalDate.now().dayOfWeek.value - 1
         val habitDaysToDelete = DAYS_OF_WEEK.filter { !days.contains(it) }
             .map { getDateOfWeek(it + 1) }
@@ -195,8 +193,6 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
                 editPlannedHabitDay(UUID.fromString(id), day, completedDays.contains(day))
             }
         }
-    }
-    return newSuspendedTransaction {
         Habit.findById(UUID.fromString(id))?.apply {
             this.name = name
             this.description = description
