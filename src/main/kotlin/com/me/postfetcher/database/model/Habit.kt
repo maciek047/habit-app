@@ -204,7 +204,7 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
     }
 }
 
-suspend fun deleteHabit(id: String): Habit {
+suspend fun deleteHabit(id: String) {
     return newSuspendedTransaction {
 
         val today = LocalDate.now().dayOfWeek.value - 1

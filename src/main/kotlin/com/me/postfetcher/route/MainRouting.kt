@@ -113,9 +113,9 @@ fun Route.mainRouting(
 
     delete("/habits/{id}") {
         val response =
-            either<AppError, WeeklyHabitDto> {
+            either<AppError, Unit> {
                 val id = call.parameters["id"] ?: throw Exception("Habit id is required")
-                deleteHabit(id).toWeeklyHabitDto()
+                deleteHabit(id)
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
