@@ -1,14 +1,23 @@
 package com.me.postfetcher
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
+import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
+import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.OAuthServerSettings
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.oauth
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -17,8 +26,10 @@ import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import io.ktor.server.config.MapApplicationConfig
 
 fun main() = runBlocking<Unit>(Dispatchers.Default) {
+
     val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
     embeddedServer(
         Netty,
@@ -28,6 +39,51 @@ fun main() = runBlocking<Unit>(Dispatchers.Default) {
 }
 
 fun Application.setup(dep: Dependencies) {
+
+    val domain = System.getenv("AUTH0_DOMAIN")
+    val clientId = System.getenv("AUTH0_CLIENT_ID")
+    val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
+    val audience = System.getenv("AUTH0_AUDIENCE")
+    val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
+
+    install(Authentication) {
+        oauth("auth0") {
+            client = HttpClient()
+            providerLookup = {
+                OAuthServerSettings.OAuth2ServerSettings(
+                    name = "auth0",
+                    authorizeUrl = "https://$domain/authorize",
+                    accessTokenUrl = "https://$domain/oauth/token",
+                    clientId = clientId,
+                    clientSecret = clientSecret,
+                    defaultScopes = listOf("openid", "profile", "email")
+                )
+            }
+            urlProvider = { "$callbackUrl" }
+        }
+
+        jwt("jwtAuth") {
+            val jwtIssuer = "https://$domain/"
+            val jwtAudience = audience
+
+            realm = "ktor jwtAuth"
+            verifier(
+                JWT
+                    .require(Algorithm.HMAC256(clientSecret))
+                    .withIssuer(jwtIssuer)
+                    .withAudience(jwtAudience)
+                    .build()
+            )
+            validate { credential ->
+                if (credential.payload.getClaim("email_verified").asBoolean()) {
+                    JWTPrincipal(credential.payload)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
     install(ContentNegotiation) {
         json(Json {
             isLenient = true
@@ -52,6 +108,7 @@ fun Application.setup(dep: Dependencies) {
     }
 
     routing {
+        authRouting(domain, clientId, callbackUrl)
         mainRouting(dep.postsFetcher)
     }
     runBlocking {

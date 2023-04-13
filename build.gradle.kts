@@ -77,6 +77,10 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktorVersion")
     implementation("io.ktor:ktor-client-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+    implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
+    implementation("com.auth0:mvc-auth-commons:1.9.4")
+
+
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.arrow-kt:arrow-core:$arrowVersion")
     implementation("io.mockk:mockk:1.12.4")

@@ -25,6 +25,9 @@ import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import com.me.postfetcher.service.PostsFetcher
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.receive
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
@@ -119,4 +122,24 @@ fun Route.mainRouting(
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
+
+    authenticate("jwtAuth") {
+        get("/restricted") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            println("principal: $principal")
+            println("payload: ${principal?.payload}")
+            println("user_id: ${principal?.payload?.getClaim("user_id")?.asString()}")
+            println(principal?.audience)
+            println(principal?.issuer)
+            println(principal?.payload?.subject)
+            println(principal?.payload?.audience)
+            println(principal?.payload?.id)
+            println(principal?.payload?.claims)
+
+            // Do something with the jwtToken and userId
+            // ...
+        }
+    }
+
+
 }
