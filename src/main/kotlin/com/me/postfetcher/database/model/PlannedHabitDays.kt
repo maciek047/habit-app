@@ -32,10 +32,9 @@ fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): PlannedHab
         plannedHabitDay.completed = completed
 
         val habitDate = getDateOfWeek(day + 1)
-        val habitExecution = HabitExecution.find {
+        HabitExecution.find {
             (HabitExecutions.plannedHabitDayId eq plannedHabitDay.id.value) and HabitExecutions.executionDate.eq(habitDate)
-        }.first()
-        habitExecution.completed = completed
+        }.firstOrNull()?.let { it.completed = completed } ?: createHabitExecution(habitId, plannedHabitDay.id.value, day, completed)
         return plannedHabitDay
 }
 
