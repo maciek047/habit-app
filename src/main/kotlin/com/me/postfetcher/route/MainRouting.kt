@@ -46,6 +46,12 @@ fun Route.mainRouting() {
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
 
+    get("/is-authenticated") {
+        logger.info("is-authenticated main called")
+        val authenticated = call.sessions.get<UserSession>() != null
+        call.respond(HttpStatusCode.OK, mapOf("authenticated" to authenticated))
+    }
+
     get("/habits") {
         authenticate { userSession ->
             logger.info("fetching habits for user ${userSession.userId}")

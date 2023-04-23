@@ -9,13 +9,11 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -89,14 +87,11 @@ fun Route.authRouting(
             // ...
         }
 
-        get("/is-authenticated") {
-            logger.info("is-authenticated authenticated called")
-            call.respond(HttpStatusCode.OK, mapOf("authenticated" to true))
-        }
+//        get("/is-authenticated") {
+//            logger.info("is-authenticated authenticated called")
+//            call.respond(HttpStatusCode.OK, mapOf("authenticated" to true))
+//        }
     }
 
-    get("/is-authenticated") {
-        logger.info("is-authenticated open called")
-        call.respond(HttpStatusCode.OK, mapOf("authenticated" to false))
-    }
+
 }
