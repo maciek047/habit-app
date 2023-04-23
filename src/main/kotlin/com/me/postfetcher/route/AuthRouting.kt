@@ -29,6 +29,8 @@ fun Route.authRouting(
     callbackUrl: String?
 ) {
 
+    val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
     authenticate("auth0") {
         get("/callback") {
             val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
@@ -88,11 +90,13 @@ fun Route.authRouting(
         }
 
         get("/is-authenticated") {
+            logger.info("is-authenticated authenticated called")
             call.respond(HttpStatusCode.OK, mapOf("authenticated" to true))
         }
     }
 
     get("/is-authenticated") {
+        logger.info("is-authenticated open called")
         call.respond(HttpStatusCode.OK, mapOf("authenticated" to false))
     }
 }
