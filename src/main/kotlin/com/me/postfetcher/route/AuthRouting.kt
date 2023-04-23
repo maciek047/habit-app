@@ -2,19 +2,26 @@ package com.me.postfetcher.route
 
 
 import com.auth0.json.auth.UserInfo
+import com.me.postfetcher.UserSession
 import com.me.postfetcher.database.model.createUserIfNotExists
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.sessions.clear
+import io.ktor.server.sessions.sessions
+import io.ktor.server.sessions.set
 
 fun Route.authRouting(
     domain: String?,
@@ -23,44 +30,11 @@ fun Route.authRouting(
 ) {
 
     authenticate("auth0") {
-//        get("/callback") {
-//            val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
-//                ?: error("No principal")
-//
-//            val accessToken = principal.accessToken
-//
-//            // Save the access token and user information to your session, database, or other storage
-//            // ...
-//
-//            // Get user profile information from the /userinfo endpoint
-//            val httpClient = HttpClient()
-//            val userInfoUrl = "https://$domain/userinfo"
-//            val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
-//                headers {
-//                    append(HttpHeaders.Authorization, "Bearer $accessToken")
-//                }
-//            }.body()
-//
-//
-//            // Save user information to the PostgreSQL Users table
-//            // You need to implement the following function in your code
-//            // It should create a new user in the Users table if not exists, otherwise, return the existing user
-//            val user = createUserIfNotExists(userInfoResponse)
-//
-//            // Save the user ID (UUID) in a session or a secure cookie
-//            // ...
-//
-//            call.respondRedirect("/")
-//        }
-
         get("/callback") {
             val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
                 ?: error("No principal")
 
             val accessToken = principal.accessToken
-
-            // Save the access token and user information to your session, database, or other storage
-            // ...
 
             // Get user profile information from the /userinfo endpoint
             val httpClient = HttpClient()
@@ -71,15 +45,10 @@ fun Route.authRouting(
                 }
             }.body()
 
-            // Save user information to the PostgreSQL Users table
-            // You need to implement the following function in your code
-            // It should create a new user in the Users table if not exists, otherwise, return the existing user
             val user = createUserIfNotExists(userInfoResponse)
-
-            // Save the user ID (UUID) in a session or a secure cookie
-            // ...
-
-            call.respondRedirect("/")
+            val userSession = UserSession(user.id.toString())
+            call.sessions.set(userSession)
+            call.respondRedirect("/habits")
         }
     }
 
@@ -93,12 +62,37 @@ fun Route.authRouting(
     }
 
     get("/logout") {
-        // Clear the user session or delete the access token from your storage
-        // ...
-
+        call.sessions.clear<UserSession>()
         val logoutUrl = "https://$domain/v2/logout?" +
                 "client_id=$clientId&" +
-                "returnTo=https://your-heroku-app-name.herokuapp.com" // Replace this with your app URL
+                "returnTo=https://your-heroku-app-name.herokuapp.com" // todo  Replace this with your app URL
         call.respondRedirect(logoutUrl)
+    }
+
+    authenticate("jwtAuth") {
+        get("/test-endpoint") {
+
+            val principal = call.authentication.principal<JWTPrincipal>()
+            println("principal: $principal")
+            println("payload: ${principal?.payload}")
+            println("user_id: ${principal?.payload?.getClaim("user_id")?.asString()}")
+            println(principal?.audience)
+            println(principal?.issuer)
+            println(principal?.payload?.subject)
+            println(principal?.payload?.audience)
+            println(principal?.payload?.id)
+            println(principal?.payload?.claims)
+
+            // Do something with the jwtToken and userId
+            // ...
+        }
+
+        get("/is-authenticated") {
+            call.respond(HttpStatusCode.OK, mapOf("authenticated" to true))
+        }
+    }
+
+    get("/is-authenticated") {
+        call.respond(HttpStatusCode.OK, mapOf("authenticated" to false))
     }
 }

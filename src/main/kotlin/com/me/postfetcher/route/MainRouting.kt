@@ -2,6 +2,7 @@ package com.me.postfetcher.route
 
 import arrow.core.continuations.either
 import com.me.postfetcher.AppError
+import com.me.postfetcher.UserSession
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
 import com.me.postfetcher.common.extensions.toLocalDate
@@ -22,26 +23,40 @@ import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
-import com.me.postfetcher.service.PostsFetcher
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.receive
+import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
+import io.ktor.server.sessions.get
+import io.ktor.server.sessions.sessions
+import io.ktor.util.pipeline.PipelineContext
 import java.time.LocalDate
 import java.util.UUID
 
-fun Route.mainRouting(
-    postsFetcher: PostsFetcher
-) {
+fun Route.mainRouting() {
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+
+    get("/habits") {
+        authenticate { userSession ->
+            logger.info("fetching habits for user ${userSession.userId}")
+            val userId = UUID.fromString(userSession.userId)
+            val response =
+                either<AppError, WeeklyHabitsResponse> {
+                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(userId))
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
+    }
 
     post("/habits/stats") {
         val response =
@@ -61,13 +76,6 @@ fun Route.mainRouting(
         call.apiResponse(response)
     }
 
-    get("/habits") {
-        val response =
-            either<AppError, WeeklyHabitsResponse> {
-               WeeklyHabitsResponse(fetchHabitsWithPlannedDays())
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
-    }
 
     get("/habits/today") {
         val response =
@@ -140,6 +148,13 @@ fun Route.mainRouting(
             // ...
         }
     }
+}
 
-
+suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
+    val userSession = call.sessions.get<UserSession>()
+    if (userSession == null) {
+        call.respond(HttpStatusCode.Unauthorized)
+        throw Exception("Unauthorized")
+    }
+    function(userSession)
 }

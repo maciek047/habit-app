@@ -150,7 +150,7 @@ suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<Habi
     }
 }
 
-suspend fun fetchHabitsWithPlannedDays(): List<WeeklyHabitDto> {
+suspend fun fetchHabitsWithPlannedDays(userId: UUID): List<WeeklyHabitDto> {
     ensureHabitExecutionsForCurrentWeekExist()
     return fetchHabits().map { habit ->
         val plannedDays = fetchPlannedHabitDaysById(habit.id.value)
