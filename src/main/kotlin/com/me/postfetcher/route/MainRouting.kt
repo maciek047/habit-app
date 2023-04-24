@@ -44,7 +44,7 @@ import java.util.UUID
 
 fun Route.mainRouting() {
 
-    val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
+    val logger = mu.KotlinLogging.logger {}
 
     get("/is-authenticated") {
         logger.info("is-authenticated main called")
