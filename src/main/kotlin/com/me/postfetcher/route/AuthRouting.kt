@@ -10,7 +10,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.call
-import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -31,12 +30,10 @@ fun Route.authRouting(
 
 
     get("/callback") {
-        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
-            ?: error("No principal received")
+//        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
+//            ?: error("No principal received")
 
-        logger.info("principal received correctly: $principal")
-
-        val accessToken = principal.accessToken
+        val accessToken = call.parameters["access_token"]
 
         // Get user profile information from the /userinfo endpoint
         val httpClient = HttpClient()
