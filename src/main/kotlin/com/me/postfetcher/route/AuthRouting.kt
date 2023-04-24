@@ -13,6 +13,7 @@ import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.request.receive
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -36,6 +37,9 @@ fun Route.authRouting(
         val accessToken = call.parameters.forEach { s, strings ->
             println("s: $s, $strings")
         }
+
+        val body = call.receive<String>()
+        println("body: $body")
 
 
         logger.info("principal received correctly: $accessToken")
