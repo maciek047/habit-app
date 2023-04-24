@@ -30,7 +30,7 @@ fun Route.authRouting(
     val logger = mu.KotlinLogging.logger {}
 
 
-    get("/callback") {
+    get("/callback#{access_token}") {
 //        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
 //            ?: error("No principal received")
 
