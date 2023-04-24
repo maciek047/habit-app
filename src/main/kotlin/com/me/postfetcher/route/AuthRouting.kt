@@ -33,7 +33,11 @@ fun Route.authRouting(
 //        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
 //            ?: error("No principal received")
 
-        val accessToken = call.parameters["access_token"]
+        val accessToken = call.parameters.forEach { s, strings ->
+            println("s: $s, $strings")
+        }
+
+
         logger.info("principal received correctly: $accessToken")
 
         // Get user profile information from the /userinfo endpoint
