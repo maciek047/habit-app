@@ -34,6 +34,7 @@ fun Route.authRouting(
 //            ?: error("No principal received")
 
         val accessToken = call.parameters["access_token"]
+        logger.info("principal received correctly: $accessToken")
 
         // Get user profile information from the /userinfo endpoint
         val httpClient = HttpClient()
@@ -44,7 +45,11 @@ fun Route.authRouting(
             }
         }.body()
 
+        logger.info("userInfoResponse: $userInfoResponse")
+
         val user = createUserIfNotExists(userInfoResponse)
+
+        logger.info("user: $user")
         val userSession = UserSession(user.id.toString())
         call.sessions.set(userSession)
         call.respondRedirect("/habits")
