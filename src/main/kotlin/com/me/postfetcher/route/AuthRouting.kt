@@ -29,10 +29,36 @@ fun Route.authRouting(
 
     val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
 
+//    get("/callback") {
+//        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
+//            ?: error("No principal")
+//
+//        val accessToken = principal.accessToken
+//
+//        // Get user profile information from the /userinfo endpoint
+//        val httpClient = HttpClient()
+//        val userInfoUrl = "https://$domain/userinfo"
+//        val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
+//            headers {
+//                append(HttpHeaders.Authorization, "Bearer $accessToken")
+//            }
+//        }.body()
+//
+//        val user = createUserIfNotExists(userInfoResponse)
+//        val userSession = UserSession(user.id.toString())
+//        call.sessions.set(userSession)
+//        call.respondRedirect("/habits")
+//    }
+
     authenticate("auth0") {
         get("/callback") {
             val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
                 ?: error("No principal")
+
+            logger.info("principal received correctly: $principal")
+
+            val code = call.request.queryParameters["code"]
+            val state = call.request.queryParameters["state"]
 
             val accessToken = principal.accessToken
 
