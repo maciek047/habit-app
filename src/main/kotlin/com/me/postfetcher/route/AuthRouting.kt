@@ -45,7 +45,7 @@ fun Route.authRouting(
             call.request.headers.forEach { s, strings ->
                 println("header: $s, $strings")
             }
-            val accessToken = principal?.accessToken
+            val accessToken = principal?.extraParameters?.get("access_token")
 
             val body = call.receive<String>()
             println("body: $body")
