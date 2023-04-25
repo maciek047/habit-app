@@ -57,11 +57,14 @@ fun Route.authRouting(
             }
         }
 
+        println(tokenResponse.body<String>())
+
         val tokenResponseBodyString = tokenResponse.body<String>()
         val tokenResponseBody = Json.parseToJsonElement(tokenResponseBodyString).jsonObject
         val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
 
         val userInfoUrl = "https://$domain/userinfo"
+        println("userInfoUrl: $userInfoUrl")
         val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
             headers {
                 append(HttpHeaders.Authorization, "Bearer $accessToken")
