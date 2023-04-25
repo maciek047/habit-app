@@ -40,44 +40,42 @@ fun Route.authRouting(
 
     val logger = mu.KotlinLogging.logger {}
 
-    authenticate("auth0") {
-        get("/callback") {
-            val code = call.parameters["code"] ?: error("No code received")
-            val httpClient = HttpClient()
+    get("/callback") {
+        val code = call.parameters["code"] ?: error("No code received")
+        val httpClient = HttpClient()
 
-            val tokenUrl = "https://$domain/oauth/token"
-            val tokenResponse = httpClient.post(tokenUrl) {
-                contentType(ContentType.Application.Json)
-                body = buildJsonObject {
-                    put("grant_type", "authorization_code")
-                    put("client_id", clientId)
-                    put("client_secret", clientSecret)
-                    put("code", code)
-                    put("redirect_uri", callbackUrl)
-                }
+        val tokenUrl = "https://$domain/oauth/token"
+        val tokenResponse = httpClient.post(tokenUrl) {
+            contentType(ContentType.Application.Json)
+            body = buildJsonObject {
+                put("grant_type", "authorization_code")
+                put("client_id", clientId)
+                put("client_secret", clientSecret)
+                put("code", code)
+                put("redirect_uri", callbackUrl)
             }
-
-
-            val tokenResponseBody = tokenResponse.body<JsonObject>()
-            val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
-
-            val userInfoUrl = "https://$domain/userinfo"
-            val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
-                headers {
-                    append(HttpHeaders.Authorization, "Bearer $accessToken")
-                }
-            }.body()
-
-            logger.info("userInfoResponse: $userInfoResponse")
-
-            val user = createUserIfNotExists(userInfoResponse)
-
-            logger.info("user: $user")
-            val userSession = UserSession(user.id.toString())
-            call.sessions.set(userSession)
-            call.respondRedirect("/habits")
         }
+
+        val tokenResponseBody = tokenResponse.body<JsonObject>()
+        val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
+
+        val userInfoUrl = "https://$domain/userinfo"
+        val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
+            headers {
+                append(HttpHeaders.Authorization, "Bearer $accessToken")
+            }
+        }.body()
+
+        logger.info("userInfoResponse: $userInfoResponse")
+
+        val user = createUserIfNotExists(userInfoResponse)
+
+        logger.info("user: $user")
+        val userSession = UserSession(user.id.toString())
+        call.sessions.set(userSession)
+        call.respondRedirect("/habits")
     }
+
 
     get("/login") {
         val auth0Url = "https://$domain/authorize?" +
