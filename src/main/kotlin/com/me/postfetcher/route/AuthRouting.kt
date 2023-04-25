@@ -77,7 +77,7 @@ fun Route.authRouting(
 
     get("/login") {
         val auth0Url = "https://$domain/authorize?" +
-                "response_type=code&" +
+                "response_type=token&" +
                 "client_id=$clientId&" +
                 "redirect_uri=$callbackUrl&" +
                 "scope=openid%20profile%20email"
