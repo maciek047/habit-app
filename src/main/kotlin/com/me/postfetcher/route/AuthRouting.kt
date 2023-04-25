@@ -1,6 +1,7 @@
 package com.me.postfetcher.route
 
 
+import com.auth0.Tokens
 import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
 import com.me.postfetcher.database.model.createUserIfNotExists
@@ -10,10 +11,10 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.call
-import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.request.header
 import io.ktor.server.request.receive
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
@@ -21,6 +22,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
+import javax.servlet.http.HttpServletRequest
 
 fun Route.authRouting(
     domain: String?,
@@ -31,69 +33,41 @@ fun Route.authRouting(
     val logger = mu.KotlinLogging.logger {}
 
 
-//    get("/callback") {
-////        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
-////            ?: error("No principal received")
-//
-//        val accessToken = call.parameters.forEach { s, strings ->
-//            println("s: $s, $strings")
-//        }
-//
-//        val body = call.receive<String>()
-//        println("body: $body")
-//
-//
-//        logger.info("principal received correctly: $accessToken")
-//
-//        // Get user profile information from the /userinfo endpoint
-//        val httpClient = HttpClient()
-//        val userInfoUrl = "https://$domain/userinfo"
-//        val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
-//            headers {
-//                append(HttpHeaders.Authorization, "Bearer $accessToken")
-//            }
-//        }.body()
-//
-//        logger.info("userInfoResponse: $userInfoResponse")
-//
-//        val user = createUserIfNotExists(userInfoResponse)
-//
-//        logger.info("user: $user")
-//        val userSession = UserSession(user.id.toString())
-//        call.sessions.set(userSession)
-//        call.respondRedirect("/habits")
-//    }
+    get("/callback") {
+//        val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
+//            ?: error("No principal received")
 
-    authenticate("jwtAuth") {
-        get("/callback") {
-            val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
-                ?: error("No principal received")
-
-            logger.info("principal received correctly: $principal")
-
-            call.parameters.forEach { s, strings ->
-                println("s: $s, $strings")
-            }
-
-            val body = call.receive<String>()
-            println("body: $body")
-
-            val accessToken = principal.accessToken
-
-            // Get user profile information from the /userinfo endpoint
-            val httpClient = HttpClient()
-            val userInfoUrl = "https://$domain/userinfo"
-            val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
-                headers {
-                    append(HttpHeaders.Authorization, "Bearer $accessToken")
-                }
-            }.body()
-
-            val user = createUserIfNotExists(userInfoResponse)
-            val userSession = UserSession(user.id.toString())
-            call.sessions.set(userSession)
-            call.respondRedirect("/habits")
+        call.parameters.forEach { s, strings ->
+            println("s: $s, $strings")
         }
+
+        call.request.headers.forEach { s, strings ->
+            println("header: $s, $strings")
+        }
+        val accessToken = call.request.header("access_token")
+
+        val body = call.receive<String>()
+        println("body: $body")
+
+//        logger.info("principal received correctly: $accessToken")
+
+        // Get user profile information from the /userinfo endpoint
+        val httpClient = HttpClient()
+        val userInfoUrl = "https://$domain/userinfo"
+        val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
+            headers {
+                append(HttpHeaders.Authorization, "Bearer $accessToken")
+            }
+        }.body()
+
+        logger.info("userInfoResponse: $userInfoResponse")
+
+        val user = createUserIfNotExists(userInfoResponse)
+
+        logger.info("user: $user")
+        val userSession = UserSession(user.id.toString())
+        call.sessions.set(userSession)
+        call.respondRedirect("/habits")
     }
 
     get("/login") {
@@ -138,4 +112,22 @@ fun Route.authRouting(
     }
 
 
+}
+
+const val KEY_EXPIRES_IN = "expires_in"
+const val KEY_ACCESS_TOKEN = "access_token"
+const val KEY_ID_TOKEN = "id_token"
+const val KEY_TOKEN_TYPE = "token_type"
+const val KEY_TOKEN = "token"
+fun getFrontChannelTokens(request: HttpServletRequest): Tokens {
+    val expiresIn = if (request.getParameter(KEY_EXPIRES_IN) == null) null else request.getParameter(
+        KEY_EXPIRES_IN
+    ).toLong()
+    return Tokens(
+        request.getParameter(KEY_ACCESS_TOKEN),
+        request.getParameter(KEY_ID_TOKEN),
+        null,
+        request.getParameter(KEY_TOKEN_TYPE),
+        expiresIn
+    )
 }
