@@ -9,24 +9,32 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
+import io.ktor.client.request.post
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 import io.ktor.server.application.call
-import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.request.receive
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
+import io.ktor.util.InternalAPI
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import javax.servlet.http.HttpServletRequest
 
+@OptIn(InternalAPI::class)
 fun Route.authRouting(
     domain: String?,
     clientId: String?,
+    clientSecret: String?,
     callbackUrl: String?
 ) {
 
@@ -34,26 +42,25 @@ fun Route.authRouting(
 
     authenticate("auth0") {
         get("/callback") {
-            val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
-            println("principal: $principal")
-//            ?: error("No principal received")
-
-            call.parameters.forEach { s, strings ->
-                println("s: $s, $strings")
-            }
-
-            call.request.headers.forEach { s, strings ->
-                println("header: $s, $strings")
-            }
-            val accessToken = principal?.extraParameters?.get("access_token")
-
-            val body = call.receive<String>()
-            println("body: $body")
-
-//        logger.info("principal received correctly: $accessToken")
-
-            // Get user profile information from the /userinfo endpoint
+            val code = call.parameters["code"] ?: error("No code received")
             val httpClient = HttpClient()
+
+            val tokenUrl = "https://$domain/oauth/token"
+            val tokenResponse = httpClient.post(tokenUrl) {
+                contentType(ContentType.Application.Json)
+                body = buildJsonObject {
+                    put("grant_type", "authorization_code")
+                    put("client_id", clientId)
+                    put("client_secret", clientSecret)
+                    put("code", code)
+                    put("redirect_uri", callbackUrl)
+                }
+            }
+
+
+            val tokenResponseBody = tokenResponse.body<JsonObject>()
+            val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
+
             val userInfoUrl = "https://$domain/userinfo"
             val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
                 headers {
@@ -70,14 +77,11 @@ fun Route.authRouting(
             call.sessions.set(userSession)
             call.respondRedirect("/habits")
         }
-
-
     }
-
 
     get("/login") {
         val auth0Url = "https://$domain/authorize?" +
-                "response_type=token&" +
+                "response_type=code&" +
                 "client_id=$clientId&" +
                 "redirect_uri=$callbackUrl&" +
                 "scope=openid%20profile%20email"

@@ -128,7 +128,7 @@ fun Application.setup(dep: Dependencies) {
     }
 
     routing {
-        authRouting(domain, clientId, callbackUrl)
+        authRouting(domain, clientId, clientSecret, callbackUrl)
         mainRouting()
     }
     runBlocking {
