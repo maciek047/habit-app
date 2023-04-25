@@ -7,17 +7,14 @@ import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
-import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.OAuthServerSettings
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
-import io.ktor.server.auth.oauth
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -56,20 +53,20 @@ fun Application.setup(dep: Dependencies) {
 //    install(UserAuthentication)
 
     install(Authentication) {
-        oauth("auth0") {
-            client = HttpClient()
-            providerLookup = {
-                OAuthServerSettings.OAuth2ServerSettings(
-                    name = "auth0",
-                    authorizeUrl = "https://$domain/authorize",
-                    accessTokenUrl = "https://$domain/oauth/token",
-                    clientId = clientId,
-                    clientSecret = clientSecret,
-                    defaultScopes = listOf("openid", "profile", "email")
-                )
-            }
-            urlProvider = { "$callbackUrl" }
-        }
+//        oauth("auth0") {
+//            client = HttpClient()
+//            providerLookup = {
+//                OAuthServerSettings.OAuth2ServerSettings(
+//                    name = "auth0",
+//                    authorizeUrl = "https://$domain/authorize",
+//                    accessTokenUrl = "https://$domain/oauth/token",
+//                    clientId = clientId,
+//                    clientSecret = clientSecret,
+//                    defaultScopes = listOf("openid", "profile", "email")
+//                )
+//            }
+//            urlProvider = { "$callbackUrl" }
+//        }
 
         jwt("jwtAuth") {
             val jwtIssuer = "https://$domain/"
@@ -80,7 +77,7 @@ fun Application.setup(dep: Dependencies) {
                 JWT
                     .require(Algorithm.HMAC256(clientSecret))
                     .withIssuer(jwtIssuer)
-//                    .withAudience(jwtAudience) //todo
+                    .withAudience(jwtAudience) //todo
                     .build()
             )
             validate { credential ->
