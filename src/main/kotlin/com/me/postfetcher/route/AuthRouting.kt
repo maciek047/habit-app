@@ -4,9 +4,11 @@ package com.me.postfetcher.route
 import com.auth0.Tokens
 import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
+import com.me.postfetcher.client.toResponseString
 import com.me.postfetcher.database.model.createUserIfNotExists
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
@@ -43,7 +45,7 @@ fun Route.authRouting(
 
     get("/callback") {
         val code = call.parameters["code"] ?: error("No code received")
-        val httpClient = HttpClient()
+        val httpClient = HttpClient(CIO)
 
         val tokenUrl = "https://$domain/oauth/token"
         val tokenResponse = httpClient.post(tokenUrl) {
@@ -55,12 +57,10 @@ fun Route.authRouting(
                 put("code", code)
                 put("redirect_uri", callbackUrl)
             }
-        }
+        }.toResponseString()
 
-        println(tokenResponse.body<String>())
 
-        val tokenResponseBodyString = tokenResponse.body<String>()
-        val tokenResponseBody = Json.parseToJsonElement(tokenResponseBodyString).jsonObject
+        val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
         val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
 
         val userInfoUrl = "https://$domain/userinfo"

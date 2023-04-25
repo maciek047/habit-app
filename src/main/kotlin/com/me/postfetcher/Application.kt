@@ -51,6 +51,7 @@ fun Application.setup(dep: Dependencies) {
 
 //    install(UserAuthentication)
 
+
     install(Authentication) {
         oauth("auth0") {
             client = HttpClient()
@@ -106,10 +107,15 @@ fun Application.setup(dep: Dependencies) {
 
     install(ContentNegotiation) {
         json(Json {
-            isLenient = true
             ignoreUnknownKeys = true
+            isLenient = true
+            prettyPrint = true
+            encodeDefaults = true
         })
     }
+
+
+
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Put)

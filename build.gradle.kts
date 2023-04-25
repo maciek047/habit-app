@@ -1,7 +1,7 @@
 import com.heroku.sdk.HerokuExtension
 
 
-val ktorVersion: String = "2.0.2"
+val ktorVersion: String = "2.3.0"
 val kotlinVersion: String = "1.6.10"
 val logbackVersion: String = "1.2.11"
 val arrowVersion: String = "1.1.2"
@@ -10,8 +10,7 @@ val gsonVersion: String = "2.9.0"
 plugins {
     application
     kotlin("jvm") version "1.7.0"
-//    kotlin("plugin.serialization") version "1.7.0"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.7.0"
+    kotlin("plugin.serialization") version "1.7.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.heroku.sdk.heroku-gradle") version "3.0.0"
 }
@@ -106,6 +105,8 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:$ktorVersion")
     implementation("io.ktor:ktor-http:$ktorVersion")
     implementation("org.testng:testng:7.1.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-protobuf:$ktorVersion")
+
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")
     compileOnly("com.squareup.moshi:moshi-kotlin:1.13.0")
