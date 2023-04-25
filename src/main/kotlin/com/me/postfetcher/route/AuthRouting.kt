@@ -24,8 +24,9 @@ import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import io.ktor.util.InternalAPI
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import javax.servlet.http.HttpServletRequest
@@ -56,7 +57,8 @@ fun Route.authRouting(
             }
         }
 
-        val tokenResponseBody = tokenResponse.body<JsonObject>()
+        val tokenResponseBodyString = tokenResponse.body<String>()
+        val tokenResponseBody = Json.parseToJsonElement(tokenResponseBodyString).jsonObject
         val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
 
         val userInfoUrl = "https://$domain/userinfo"
