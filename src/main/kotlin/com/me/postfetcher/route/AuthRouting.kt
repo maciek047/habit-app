@@ -32,7 +32,7 @@ fun Route.authRouting(
 
     val logger = mu.KotlinLogging.logger {}
 
-    authenticate("jwtAuth") {
+    authenticate("auth0") {
         get("/callback") {
             val principal = call.authentication.principal<OAuthAccessTokenResponse.OAuth2>()
             println("principal: $principal")
