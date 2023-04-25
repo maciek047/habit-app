@@ -99,7 +99,7 @@ fun Route.authRouting(
         call.respondRedirect(logoutUrl)
     }
 
-    authenticate("jwtAuth") {
+    authenticate("auth0") {
         get("/test-endpoint") {
 
             val principal = call.authentication.principal<JWTPrincipal>()

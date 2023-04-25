@@ -137,7 +137,7 @@ fun Route.mainRouting() {
         call.apiResponse(response)
     }
 
-    authenticate("jwtAuth") {
+    authenticate("auth0") {
         get("/restricted") {
             val principal = call.authentication.principal<JWTPrincipal>()
             println("principal: $principal")
