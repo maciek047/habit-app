@@ -46,12 +46,13 @@ fun Route.authRouting(
         val tokenResponse: String = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
             setBody(
-                """
+                """{
                 "grant_type": "authorization_code",
                 "client_id": "$clientId",
                 "client_secret": "$clientSecret",
                 "code": "$code",
                 "redirect_uri": "$callbackUrl"
+                }
             """.trimIndent()
             )
 //            body = buildJsonObject {
