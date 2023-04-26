@@ -1,9 +1,15 @@
 package com.me.postfetcher.route
 
 
+import arrow.core.continuations.either
 import com.auth0.Tokens
+import com.me.postfetcher.AppError
 import com.me.postfetcher.UserSession
+import com.me.postfetcher.common.extensions.apiResponse
+import com.me.postfetcher.common.extensions.toApiResponse
 import com.me.postfetcher.database.model.createUserIfNotExists
+import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
+import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -13,11 +19,9 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.authentication
-import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -26,6 +30,7 @@ import io.ktor.server.sessions.sessions
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.UUID
 import javax.servlet.http.HttpServletRequest
 
 fun Route.authRouting(
@@ -37,6 +42,19 @@ fun Route.authRouting(
 ) {
 
     val logger = mu.KotlinLogging.logger {}
+
+
+    get("/habits") {
+        authenticate { userSession ->
+            logger.info("fetching habits for user ${userSession.userId}")
+            val userId = UUID.fromString(userSession.userId)
+            val response =
+                either<AppError, WeeklyHabitsResponse> {
+                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(userId))
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
+    }
 
     get("/callback") {
         val code = call.parameters["code"] ?: error("No code received")
@@ -102,26 +120,6 @@ fun Route.authRouting(
                 "returnTo=https://sleepy-spire-13018.herokuapp.com/"
         call.respondRedirect(logoutUrl)
     }
-
-    authenticate("auth0") {
-        get("/test-endpoint") {
-
-            val principal = call.authentication.principal<JWTPrincipal>()
-            println("principal: $principal")
-            println("payload: ${principal?.payload}")
-            println("user_id: ${principal?.payload?.getClaim("user_id")?.asString()}")
-            println(principal?.audience)
-            println(principal?.issuer)
-            println(principal?.payload?.subject)
-            println(principal?.payload?.audience)
-            println(principal?.payload?.id)
-            println(principal?.payload?.claims)
-
-
-        }
-
-    }
-
 
 }
 

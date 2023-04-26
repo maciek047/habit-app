@@ -12,7 +12,6 @@ import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
 import com.me.postfetcher.database.model.fetchHabitMetrics
 import com.me.postfetcher.database.model.fetchHabitStats
-import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
@@ -22,13 +21,9 @@ import com.me.postfetcher.route.dto.HabitStatsRequest
 import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitDto
-import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.authentication
-import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
@@ -46,23 +41,7 @@ fun Route.mainRouting() {
 
     val logger = mu.KotlinLogging.logger {}
 
-//    get("/is-authenticated") {
-//        logger.info("is-authenticated main called")
-//        val authenticated = call.sessions.get<UserSession>() != null
-//        call.respond(HttpStatusCode.OK, mapOf("authenticated" to authenticated))
-//    }
 
-    get("/habits") {
-        authenticate { userSession ->
-            logger.info("fetching habits for user ${userSession.userId}")
-            val userId = UUID.fromString(userSession.userId)
-            val response =
-                either<AppError, WeeklyHabitsResponse> {
-                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(userId))
-                }.toApiResponse(HttpStatusCode.OK)
-            call.apiResponse(response)
-        }
-    }
 
     post("/habits") {
         authenticate { userSession ->
@@ -141,23 +120,7 @@ fun Route.mainRouting() {
         call.apiResponse(response)
     }
 
-    authenticate("auth0") {
-        get("/restricted") {
-            val principal = call.authentication.principal<JWTPrincipal>()
-            println("principal: $principal")
-            println("payload: ${principal?.payload}")
-            println("user_id: ${principal?.payload?.getClaim("user_id")?.asString()}")
-            println(principal?.audience)
-            println(principal?.issuer)
-            println(principal?.payload?.subject)
-            println(principal?.payload?.audience)
-            println(principal?.payload?.id)
-            println(principal?.payload?.claims)
 
-            // Do something with the jwtToken and userId
-            // ...
-        }
-    }
 }
 
 suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
