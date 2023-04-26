@@ -31,7 +31,6 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
-import io.ktor.server.sessions.get
 import io.ktor.server.sessions.sessions
 import io.ktor.util.pipeline.PipelineContext
 import java.time.LocalDate
@@ -124,7 +123,7 @@ fun Route.mainRouting() {
 }
 
 suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
-    val userSession = call.sessions.get<UserSession>()
+    val userSession = call.sessions.get("user_session_cookie") as UserSession?
     if (userSession == null) {
         call.respondRedirect("/login")
     } else {
