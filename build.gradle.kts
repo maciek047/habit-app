@@ -10,7 +10,7 @@ val gsonVersion: String = "2.9.0"
 plugins {
     application
     kotlin("jvm") version "1.7.0"
-    kotlin("plugin.serialization") version "1.7.0"
+//    kotlin("plugin.serialization") version "1.7.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
     id("com.heroku.sdk.heroku-gradle") version "3.0.0"
 }
@@ -67,7 +67,7 @@ dependencies {
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrowVersion")
     implementation("io.arrow-kt:arrow-fx-stm:$arrowVersion")
     implementation("com.squareup.okhttp3:okhttp:4.9.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-core:$ktorVersion")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
@@ -105,7 +105,6 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:$ktorVersion")
     implementation("io.ktor:ktor-http:$ktorVersion")
     implementation("org.testng:testng:7.1.0")
-    implementation("io.ktor:ktor-serialization-kotlinx-protobuf:$ktorVersion")
 
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")

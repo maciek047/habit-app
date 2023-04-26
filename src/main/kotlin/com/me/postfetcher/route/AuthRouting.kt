@@ -4,7 +4,6 @@ package com.me.postfetcher.route
 import com.auth0.Tokens
 import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
-import com.me.postfetcher.client.toResponseString
 import com.me.postfetcher.database.model.createUserIfNotExists
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -12,6 +11,7 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -25,7 +25,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
-import io.ktor.util.InternalAPI
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -33,7 +32,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import javax.servlet.http.HttpServletRequest
 
-@OptIn(InternalAPI::class)
 fun Route.authRouting(
     domain: String?,
     clientId: String?,
@@ -46,18 +44,26 @@ fun Route.authRouting(
     get("/callback") {
         val code = call.parameters["code"] ?: error("No code received")
         val httpClient = HttpClient(CIO)
-
         val tokenUrl = "https://$domain/oauth/token"
-        val tokenResponse = httpClient.post(tokenUrl) {
+        val tokenResponse: String = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
-            body = buildJsonObject {
+            setBody(buildJsonObject {
                 put("grant_type", "authorization_code")
                 put("client_id", clientId)
                 put("client_secret", clientSecret)
                 put("code", code)
                 put("redirect_uri", callbackUrl)
-            }
-        }.toResponseString()
+            })
+//            body = buildJsonObject {
+//                put("grant_type", "authorization_code")
+//                put("client_id", clientId)
+//                put("client_secret", clientSecret)
+//                put("code", code)
+//                put("redirect_uri", callbackUrl)
+//            }
+        }.body()
+
+        println("tokenResponse: $tokenResponse")
 
 
         val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
