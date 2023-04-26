@@ -77,6 +77,7 @@ dependencies {
     implementation("io.ktor:ktor-client-websockets:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
     implementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
+    implementation("io.ktor:ktor-server-forwarded-header:$ktorVersion")
     implementation("com.auth0:mvc-auth-commons:1.9.4")
 
 

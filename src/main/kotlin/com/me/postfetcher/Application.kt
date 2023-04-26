@@ -19,6 +19,8 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.routing.routing
 import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
 import io.ktor.server.sessions.Sessions
@@ -124,5 +126,7 @@ fun Application.setup(dep: Dependencies) {
 }
 
 fun Application.module() {
+    install(XForwardedHeaders)
+    install(ForwardedHeaders)
     setup(dependencies())
 }
