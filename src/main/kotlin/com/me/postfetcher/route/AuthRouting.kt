@@ -15,15 +15,20 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.server.application.call
+import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
+import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.clear
+import io.ktor.server.sessions.cookie
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
+import io.ktor.util.hex
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -33,8 +38,22 @@ fun Route.authRouting(
     domain: String?,
     clientId: String?,
     clientSecret: String?,
-    callbackUrl: String?
+    callbackUrl: String?,
+    sessionSignKey: String
 ) {
+
+    install(Sessions) {
+        cookie<UserSession>("user_session_cookie") {
+            val secretSignKey = hex(sessionSignKey)
+            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
+            cookie.path = "/"
+            cookie.extensions["SameSite"] = "lax"
+            cookie.httpOnly = true
+            cookie.secure = true
+            cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
+            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
+        }
+    }
 
     val logger = mu.KotlinLogging.logger {}
 
@@ -42,21 +61,7 @@ fun Route.authRouting(
         val code = call.parameters["code"] ?: error("No code received")
         val httpClient = HttpClient(CIO)
         val tokenUrl = "https://$domain/oauth/token"
-//        val token: Token = httpClient.post(tokenUrl) {
-//            contentType(ContentType.Application.Json)
-//            setBody(
-//                """{
-//                "grant_type": "authorization_code",
-//                "client_id": "$clientId",
-//                "client_secret": "$clientSecret",
-//                "code": "$code",
-//                "redirect_uri": "$callbackUrl"
-//                }
-//            """.trimIndent()
-//            )
-//        }.body()
 
-//        val accessToken = token.access_token
 
         val tokenResponse: String = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
@@ -92,8 +97,10 @@ fun Route.authRouting(
         val user = createUserIfNotExists(userEmail!!)
 
         logger.info("userId: ${user.id}")
+
         val userSession = UserSession(user.id.toString())
         call.sessions.set(userSession)
+        println("userSession set!!")
         call.respondRedirect("/habits")
     }
 
@@ -111,7 +118,7 @@ fun Route.authRouting(
         call.sessions.clear<UserSession>()
         val logoutUrl = "https://$domain/v2/logout?" +
                 "client_id=$clientId&" +
-                "returnTo=https://your-heroku-app-name.herokuapp.com" // todo  Replace this with your app URL
+                "returnTo=https://sleepy-spire-13018.herokuapp.com/"
         call.respondRedirect(logoutUrl)
     }
 

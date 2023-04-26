@@ -19,10 +19,6 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.routing
-import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
-import io.ktor.server.sessions.Sessions
-import io.ktor.server.sessions.cookie
-import io.ktor.util.hex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -68,42 +64,12 @@ fun Application.setup(dep: Dependencies) {
             urlProvider = { "$callbackUrl" }
         }
 
-//        jwt("jwtAuth") {
-//            val jwtIssuer = "https://$domain/"
-//            val jwtAudience = audience
-//
-//            realm = "ktor jwtAuth"
-//            verifier(
-//                JWT
-//                    .require(Algorithm.HMAC256(clientSecret))
-//                    .withIssuer(jwtIssuer)
-//                    .withAudience(jwtAudience) //todo
-//                    .build()
-//            )
-//            validate { credential ->
-//                if (credential.payload.getClaim("email_verified").asBoolean()) {
-//                    JWTPrincipal(credential.payload)
-//                } else {
-//                    null
-//                }
-//            }
-//        }
+
     }
 
 
-    install(Sessions) {
-        cookie<UserSession>("user_session_cookie") {
-            val secretSignKey = hex(sessionSignKey)
-            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
-            cookie.path = "/"
-            cookie.extensions["SameSite"] = "lax"
-            cookie.httpOnly = true
-            cookie.secure = true
-            cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
-            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
 
-        }
-    }
+
 
     install(ContentNegotiation) {
         json(Json {
@@ -134,7 +100,7 @@ fun Application.setup(dep: Dependencies) {
     }
 
     routing {
-        authRouting(domain, clientId, clientSecret, callbackUrl)
+        authRouting(domain, clientId, clientSecret, callbackUrl, sessionSignKey)
         mainRouting()
     }
     runBlocking {
