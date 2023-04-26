@@ -27,12 +27,12 @@ import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.cookie
 import io.ktor.server.sessions.sessions
-import io.ktor.server.sessions.set
 import io.ktor.util.hex
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.servlet.http.HttpServletRequest
+import kotlin.collections.set
 
 fun Route.authRouting(
     domain: String?,
@@ -99,7 +99,7 @@ fun Route.authRouting(
         logger.info("userId: ${user.id}")
 
         val userSession = UserSession(user.id.toString())
-        call.sessions.set(userSession)
+        call.sessions.set("user_session_cookie", userSession)
         println("userSession set!!")
         call.respondRedirect("/habits")
     }
