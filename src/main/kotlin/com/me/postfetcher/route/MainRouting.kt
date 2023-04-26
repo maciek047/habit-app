@@ -30,7 +30,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.receive
-import io.ktor.server.response.respond
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
@@ -46,11 +46,11 @@ fun Route.mainRouting() {
 
     val logger = mu.KotlinLogging.logger {}
 
-    get("/is-authenticated") {
-        logger.info("is-authenticated main called")
-        val authenticated = call.sessions.get<UserSession>() != null
-        call.respond(HttpStatusCode.OK, mapOf("authenticated" to authenticated))
-    }
+//    get("/is-authenticated") {
+//        logger.info("is-authenticated main called")
+//        val authenticated = call.sessions.get<UserSession>() != null
+//        call.respond(HttpStatusCode.OK, mapOf("authenticated" to authenticated))
+//    }
 
     get("/habits") {
         authenticate { userSession ->
@@ -59,6 +59,17 @@ fun Route.mainRouting() {
             val response =
                 either<AppError, WeeklyHabitsResponse> {
                     WeeklyHabitsResponse(fetchHabitsWithPlannedDays(userId))
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
+    }
+
+    post("/habits") {
+        authenticate { userSession ->
+            val response =
+                either<AppError, WeeklyHabitDto> {
+                    val request = call.receive<HabitCreateRequest>()
+                    createHabit(request.habitName, request.days).toWeeklyHabitDto()
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
         }
@@ -104,14 +115,7 @@ fun Route.mainRouting() {
         call.apiResponse(response)
     }
 
-    post("/habits") {
-        val response =
-            either<AppError, WeeklyHabitDto> {
-                val request = call.receive<HabitCreateRequest>()
-                createHabit(request.habitName, request.days).toWeeklyHabitDto()
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
-    }
+
 
     put("/habits/{id}") {
         val response =
@@ -159,8 +163,8 @@ fun Route.mainRouting() {
 suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
     val userSession = call.sessions.get<UserSession>()
     if (userSession == null) {
-        call.respond(HttpStatusCode.Unauthorized)
-        throw Exception("Unauthorized")
+        call.respondRedirect("/login")
+    } else {
+        function(userSession)
     }
-    function(userSession)
 }

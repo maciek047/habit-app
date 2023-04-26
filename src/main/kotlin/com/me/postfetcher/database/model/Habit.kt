@@ -45,6 +45,7 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by Habits.name
     var description by Habits.description
     var createdAt by Habits.createdAt
+//    var userId by Users.id
 }
 
 suspend fun createHabit(name: String, days: List<Int>, description: String = ""): Habit {
