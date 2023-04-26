@@ -47,7 +47,7 @@ fun Route.authRouting(
             val secretSignKey = hex(sessionSignKey)
             transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
             cookie.path = "/"
-            cookie.extensions["SameSite"] = "lax"
+            cookie.extensions["SameSite"] = "none"
             cookie.httpOnly = true
             cookie.secure = true
             cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
@@ -101,7 +101,7 @@ fun Route.authRouting(
         val userSession = UserSession(user.id.toString())
         call.sessions.set("user_session_cookie", userSession)
         println("userSession set!!")
-        call.respondRedirect("https://sleepy-spire-13018.herokuapp.com//habits")
+        call.respondRedirect("/habits")
     }
 
 
