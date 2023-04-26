@@ -101,7 +101,7 @@ fun Route.authRouting(
         val userSession = UserSession(user.id.toString())
         call.sessions.set("user_session_cookie", userSession)
         println("userSession set!!")
-        call.respondRedirect("/habits")
+        call.respondRedirect("https://sleepy-spire-13018.herokuapp.com/")
     }
 
 
