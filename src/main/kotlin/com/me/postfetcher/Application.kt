@@ -58,8 +58,7 @@ fun Application.setup(dep: Dependencies) {
             cookie.path = "/"
             cookie.extensions["SameSite"] = "none"
             cookie.httpOnly = true
-            cookie.secure = false
-            cookie.domain = "sleepy-spire-13018.herokuapp.com"
+            cookie.secure = true
             cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
         }
     }
