@@ -5,6 +5,7 @@ import com.auth0.Tokens
 import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
 import com.me.postfetcher.database.model.createUserIfNotExists
+import com.me.postfetcher.route.dto.Token
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -25,9 +26,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import javax.servlet.http.HttpServletRequest
 
 fun Route.authRouting(
@@ -43,7 +41,7 @@ fun Route.authRouting(
         val code = call.parameters["code"] ?: error("No code received")
         val httpClient = HttpClient(CIO)
         val tokenUrl = "https://$domain/oauth/token"
-        val tokenResponse: String = httpClient.post(tokenUrl) {
+        val token: Token = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
             setBody(
                 """{
@@ -64,11 +62,12 @@ fun Route.authRouting(
 //            }
         }.body()
 
-        println("tokenResponse: $tokenResponse")
+        println("tokenResponse: $token")
 
 
-        val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
-        val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
+//        val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
+//        val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
+        val accessToken = token.access_token
 
         val userInfoUrl = "https://$domain/userinfo"
         println("userInfoUrl: $userInfoUrl")
@@ -78,7 +77,7 @@ fun Route.authRouting(
             }
         }.body()
 
-        logger.info("userInfoResponse: $userInfoResponse")
+        logger.info("userInfoResponse: ${userInfoResponse.values}")
 
         val user = createUserIfNotExists(userInfoResponse)
 

@@ -23,6 +23,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
 }
 
 suspend fun createUserIfNotExists(userInfo: UserInfo): User {
+    println("creating user")
     val email = userInfo.values["email"] as String
     return findUserByEmail(email) ?: createUser(email)
 }
