@@ -124,6 +124,8 @@ fun Route.mainRouting() {
 
 suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
     val userSession = call.sessions.get("user_session_cookie") as UserSession?
+    val cookie = call.request.cookies["user_session_cookie"]
+    println("cookie: $cookie")
     if (userSession == null) {
         call.respondRedirect("/login")
     } else {
