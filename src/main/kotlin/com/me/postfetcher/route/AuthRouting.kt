@@ -2,7 +2,6 @@ package com.me.postfetcher.route
 
 
 import com.auth0.Tokens
-import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
 import com.me.postfetcher.database.model.createUserIfNotExists
 import io.ktor.client.HttpClient
@@ -81,15 +80,16 @@ fun Route.authRouting(
 
         val userInfoUrl = "https://$domain/userinfo"
         println("userInfoUrl: $userInfoUrl")
-        val userInfoResponse: UserInfo = httpClient.get(userInfoUrl) {
+        val userInfoResponse: String = httpClient.get(userInfoUrl) {
             headers {
                 append(HttpHeaders.Authorization, "Bearer $accessToken")
             }
         }.body()
 
-        logger.info("userInfoResponse: ${userInfoResponse.values}")
+        val userInfoResponseBody = Json.parseToJsonElement(userInfoResponse).jsonObject
+        val userEmail = userInfoResponseBody["email"]?.jsonPrimitive?.content
 
-        val user = createUserIfNotExists(userInfoResponse)
+        val user = createUserIfNotExists(userEmail!!)
 
         logger.info("user: $user")
         val userSession = UserSession(user.id.toString())

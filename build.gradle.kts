@@ -105,6 +105,9 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:$ktorVersion")
     implementation("io.ktor:ktor-http:$ktorVersion")
     implementation("org.testng:testng:7.1.0")
+    implementation("io.ktor:ktor-client-encoding:2.3.0")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.0")
+    implementation("io.ktor:ktor-serialization-jackson:2.3.0")
 
 
     compileOnly("com.squareup.moshi:moshi:1.13.0")

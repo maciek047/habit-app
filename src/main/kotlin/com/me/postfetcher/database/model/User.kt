@@ -1,6 +1,5 @@
 package com.me.postfetcher.database.model
 
-import com.auth0.json.auth.UserInfo
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
@@ -22,9 +21,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var createdAt by Users.createdAt
 }
 
-suspend fun createUserIfNotExists(userInfo: UserInfo): User {
-    println("creating user")
-    val email = userInfo.values["email"] as String
+suspend fun createUserIfNotExists(email: String): User {
     return findUserByEmail(email) ?: createUser(email)
 }
 
