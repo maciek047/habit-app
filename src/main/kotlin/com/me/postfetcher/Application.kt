@@ -6,6 +6,7 @@ import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
@@ -45,12 +46,11 @@ fun Application.setup(dep: Dependencies) {
     val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
     val sessionSignKey = System.getenv("SESSION_SIGN_KEY")
 
-//    install(UserAuthentication)
 
 
     install(Authentication) {
         oauth("auth0") {
-            client = HttpClient()
+            client = HttpClient(CIO)
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
                     name = "auth0",

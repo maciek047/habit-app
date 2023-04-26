@@ -49,7 +49,7 @@ fun Route.authRouting(
             cookie.path = "/"
             cookie.extensions["SameSite"] = "none"
             cookie.httpOnly = true
-            cookie.secure = true
+            cookie.secure = false
             cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
             cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
         }
@@ -136,14 +136,9 @@ fun Route.authRouting(
             println(principal?.payload?.id)
             println(principal?.payload?.claims)
 
-            // Do something with the jwtToken and userId
-            // ...
+
         }
 
-//        get("/is-authenticated") {
-//            logger.info("is-authenticated authenticated called")
-//            call.respond(HttpStatusCode.OK, mapOf("authenticated" to true))
-//        }
     }
 
 
