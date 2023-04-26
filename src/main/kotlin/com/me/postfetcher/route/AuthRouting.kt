@@ -26,10 +26,8 @@ import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import javax.servlet.http.HttpServletRequest
 
 fun Route.authRouting(
@@ -47,13 +45,15 @@ fun Route.authRouting(
         val tokenUrl = "https://$domain/oauth/token"
         val tokenResponse: String = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
-            setBody(buildJsonObject {
-                put("grant_type", "authorization_code")
-                put("client_id", clientId)
-                put("client_secret", clientSecret)
-                put("code", code)
-                put("redirect_uri", callbackUrl)
-            })
+            setBody(
+                """
+                "grant_type": "authorization_code",
+                "client_id": "$clientId",
+                "client_secret": "$clientSecret",
+                "code": "$code",
+                "redirect_uri": "$callbackUrl"
+            """.trimIndent()
+            )
 //            body = buildJsonObject {
 //                put("grant_type", "authorization_code")
 //                put("client_id", clientId)
