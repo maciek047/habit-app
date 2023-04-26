@@ -59,7 +59,7 @@ fun Application.setup(dep: Dependencies) {
             cookie.extensions["SameSite"] = "none"
             cookie.httpOnly = true
             cookie.secure = false
-            cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
+            cookie.domain = "sleepy-spire-13018.herokuapp.com"
             cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
         }
     }
