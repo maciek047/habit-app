@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 object Users : UUIDTable() {
-    val email = varchar("name", 255)
+    val email = varchar("email", 255)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 

@@ -91,7 +91,7 @@ fun Route.authRouting(
 
         val user = createUserIfNotExists(userEmail!!)
 
-        logger.info("user: $user")
+        logger.info("userId: ${user.id}")
         val userSession = UserSession(user.id.toString())
         call.sessions.set(userSession)
         call.respondRedirect("/habits")
