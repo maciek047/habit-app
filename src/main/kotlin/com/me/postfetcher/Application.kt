@@ -20,6 +20,10 @@ import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.routing.routing
+import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
+import io.ktor.server.sessions.Sessions
+import io.ktor.server.sessions.cookie
+import io.ktor.util.hex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -47,6 +51,20 @@ fun Application.setup(dep: Dependencies) {
     val sessionSignKey = System.getenv("SESSION_SIGN_KEY")
 
 
+    install(Sessions) {
+        cookie<UserSession>("user_session_cookie") {
+            val secretSignKey = hex(sessionSignKey)
+            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
+            cookie.path = "/"
+            cookie.extensions["SameSite"] = "none"
+            cookie.httpOnly = true
+            cookie.secure = false
+            cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
+            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
+        }
+    }
+
+
 
     install(Authentication) {
         oauth("auth0") {
@@ -63,8 +81,6 @@ fun Application.setup(dep: Dependencies) {
             }
             urlProvider = { "$callbackUrl" }
         }
-
-
     }
 
 

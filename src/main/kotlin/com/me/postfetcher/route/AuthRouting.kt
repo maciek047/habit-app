@@ -15,24 +15,18 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.server.application.call
-import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
-import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
-import io.ktor.server.sessions.Sessions
 import io.ktor.server.sessions.clear
-import io.ktor.server.sessions.cookie
 import io.ktor.server.sessions.sessions
-import io.ktor.util.hex
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.servlet.http.HttpServletRequest
-import kotlin.collections.set
 
 fun Route.authRouting(
     domain: String?,
@@ -41,19 +35,6 @@ fun Route.authRouting(
     callbackUrl: String?,
     sessionSignKey: String
 ) {
-
-    install(Sessions) {
-        cookie<UserSession>("user_session_cookie") {
-            val secretSignKey = hex(sessionSignKey)
-            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
-            cookie.path = "/"
-            cookie.extensions["SameSite"] = "none"
-            cookie.httpOnly = true
-            cookie.secure = false
-            cookie.domain = "shrouded-plains-88631.herokuapp.com" // Replace this with your domain
-            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
-        }
-    }
 
     val logger = mu.KotlinLogging.logger {}
 
