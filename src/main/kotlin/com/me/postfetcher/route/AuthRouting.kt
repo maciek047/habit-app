@@ -5,7 +5,6 @@ import com.auth0.Tokens
 import com.auth0.json.auth.UserInfo
 import com.me.postfetcher.UserSession
 import com.me.postfetcher.database.model.createUserIfNotExists
-import com.me.postfetcher.route.dto.Token
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.cio.CIO
@@ -26,6 +25,9 @@ import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
 import io.ktor.server.sessions.set
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import javax.servlet.http.HttpServletRequest
 
 fun Route.authRouting(
@@ -41,7 +43,23 @@ fun Route.authRouting(
         val code = call.parameters["code"] ?: error("No code received")
         val httpClient = HttpClient(CIO)
         val tokenUrl = "https://$domain/oauth/token"
-        val token: Token = httpClient.post(tokenUrl) {
+//        val token: Token = httpClient.post(tokenUrl) {
+//            contentType(ContentType.Application.Json)
+//            setBody(
+//                """{
+//                "grant_type": "authorization_code",
+//                "client_id": "$clientId",
+//                "client_secret": "$clientSecret",
+//                "code": "$code",
+//                "redirect_uri": "$callbackUrl"
+//                }
+//            """.trimIndent()
+//            )
+//        }.body()
+
+//        val accessToken = token.access_token
+
+        val tokenResponse: String = httpClient.post(tokenUrl) {
             contentType(ContentType.Application.Json)
             setBody(
                 """{
@@ -53,21 +71,13 @@ fun Route.authRouting(
                 }
             """.trimIndent()
             )
-//            body = buildJsonObject {
-//                put("grant_type", "authorization_code")
-//                put("client_id", clientId)
-//                put("client_secret", clientSecret)
-//                put("code", code)
-//                put("redirect_uri", callbackUrl)
-//            }
         }.body()
 
-        println("tokenResponse: $token")
 
+        val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
+        val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
 
-//        val tokenResponseBody = Json.parseToJsonElement(tokenResponse).jsonObject
-//        val accessToken = tokenResponseBody["access_token"]?.jsonPrimitive?.content
-        val accessToken = token.access_token
+        println("accessToken: $accessToken")
 
         val userInfoUrl = "https://$domain/userinfo"
         println("userInfoUrl: $userInfoUrl")
