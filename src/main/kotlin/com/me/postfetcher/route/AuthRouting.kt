@@ -2,8 +2,8 @@ package com.me.postfetcher.route
 
 
 import arrow.core.continuations.either
-import com.auth0.Tokens
 import com.me.postfetcher.AppError
+import com.me.postfetcher.AuthConfig
 import com.me.postfetcher.UserSession
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
@@ -21,31 +21,32 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
+import io.ktor.util.pipeline.PipelineContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.UUID
-import javax.servlet.http.HttpServletRequest
 
-fun Route.authRouting(
-    domain: String?,
-    clientId: String?,
-    clientSecret: String?,
-    callbackUrl: String?,
-    sessionSignKey: String
-) {
+fun Route.authRouting(authConfig: AuthConfig) {
 
     val logger = mu.KotlinLogging.logger {}
 
 
+    val domain = authConfig.domain
+    val clientId = authConfig.clientId
+    val clientSecret = authConfig.clientSecret
+    val callbackUrl = authConfig.callbackUrl
+
+
     get("/habits") {
-        authenticate { userSession ->
+        authenticate(authConfig) { userSession ->
             logger.info("fetching habits for user ${userSession.userId}")
             val userId = UUID.fromString(userSession.userId)
             val response =
@@ -123,20 +124,21 @@ fun Route.authRouting(
 
 }
 
-const val KEY_EXPIRES_IN = "expires_in"
-const val KEY_ACCESS_TOKEN = "access_token"
-const val KEY_ID_TOKEN = "id_token"
-const val KEY_TOKEN_TYPE = "token_type"
-const val KEY_TOKEN = "token"
-fun getFrontChannelTokens(request: HttpServletRequest): Tokens {
-    val expiresIn = if (request.getParameter(KEY_EXPIRES_IN) == null) null else request.getParameter(
-        KEY_EXPIRES_IN
-    ).toLong()
-    return Tokens(
-        request.getParameter(KEY_ACCESS_TOKEN),
-        request.getParameter(KEY_ID_TOKEN),
-        null,
-        request.getParameter(KEY_TOKEN_TYPE),
-        expiresIn
-    )
+suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(
+    authConfig: AuthConfig,
+    function: suspend (userSession: UserSession) -> Unit
+) {
+    val userSession = call.sessions.get("user_session_cookie") as UserSession?
+    val cookie = call.request.cookies["user_session_cookie"]
+    println("cookie: $cookie")
+    if (userSession == null) {
+        val auth0Url = "https://${authConfig.domain}/authorize?" +
+                "response_type=code&" +
+                "client_id=${authConfig.clientId}&" +
+                "redirect_uri=${authConfig.callbackUrl}&" +
+                "scope=openid%20profile%20email"
+        call.respondRedirect(auth0Url)
+    } else {
+        function(userSession)
+    }
 }

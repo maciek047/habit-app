@@ -2,7 +2,7 @@ package com.me.postfetcher.route
 
 import arrow.core.continuations.either
 import com.me.postfetcher.AppError
-import com.me.postfetcher.UserSession
+import com.me.postfetcher.AuthConfig
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
 import com.me.postfetcher.common.extensions.toLocalDate
@@ -22,28 +22,23 @@ import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
-import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
-import io.ktor.server.sessions.sessions
-import io.ktor.util.pipeline.PipelineContext
 import java.time.LocalDate
 import java.util.UUID
 
-fun Route.mainRouting() {
+fun Route.mainRouting(authConfig: AuthConfig) {
 
     val logger = mu.KotlinLogging.logger {}
 
 
-
     post("/habits") {
-        authenticate { userSession ->
+        authenticate(authConfig) { userSession ->
             val response =
                 either<AppError, WeeklyHabitDto> {
                     val request = call.receive<HabitCreateRequest>()
@@ -122,13 +117,4 @@ fun Route.mainRouting() {
 
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(function: suspend (userSession: UserSession) -> Unit) {
-    val userSession = call.sessions.get("user_session_cookie") as UserSession?
-    val cookie = call.request.cookies["user_session_cookie"]
-    println("cookie: $cookie")
-    if (userSession == null) {
-        call.respondRedirect("/login")
-    } else {
-        function(userSession)
-    }
-}
+

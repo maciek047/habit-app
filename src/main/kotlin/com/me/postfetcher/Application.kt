@@ -42,8 +42,18 @@ fun main() = runBlocking<Unit>(Dispatchers.Default) {
 
 data class UserSession(val userId: String)
 
+data class AuthConfig(
+    val domain: String,
+    val clientId: String,
+    val clientSecret: String,
+    val audience: String,
+    val callbackUrl: String,
+    val sessionSignKey: String
+)
+
 
 fun Application.setup(dep: Dependencies) {
+
 
     val domain = System.getenv("AUTH0_DOMAIN")
     val clientId = System.getenv("AUTH0_CLIENT_ID")
@@ -51,6 +61,15 @@ fun Application.setup(dep: Dependencies) {
     val audience = System.getenv("AUTH0_AUDIENCE")
     val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
     val sessionSignKey = System.getenv("SESSION_SIGN_KEY")
+
+    val authConfig = AuthConfig(
+        domain = domain,
+        clientId = clientId,
+        clientSecret = clientSecret,
+        audience = audience,
+        callbackUrl = callbackUrl,
+        sessionSignKey = sessionSignKey
+    )
 
 
     install(Sessions) {
@@ -84,10 +103,6 @@ fun Application.setup(dep: Dependencies) {
         }
     }
 
-
-
-
-
     install(ContentNegotiation) {
         json(Json {
             ignoreUnknownKeys = true
@@ -96,8 +111,6 @@ fun Application.setup(dep: Dependencies) {
             encodeDefaults = true
         })
     }
-
-
 
     install(CORS) {
         allowMethod(HttpMethod.Options)
@@ -117,8 +130,8 @@ fun Application.setup(dep: Dependencies) {
     }
 
     routing {
-        authRouting(domain, clientId, clientSecret, callbackUrl, sessionSignKey)
-        mainRouting()
+        authRouting(authConfig)
+        mainRouting(authConfig)
     }
     runBlocking {
         DatabaseConfig.connect()
