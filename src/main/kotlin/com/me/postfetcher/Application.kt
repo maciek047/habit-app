@@ -1,20 +1,20 @@
 package com.me.postfetcher
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.OAuthServerSettings
-import io.ktor.server.auth.oauth
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -87,19 +87,25 @@ fun Application.setup(dep: Dependencies) {
 
 
     install(Authentication) {
-        oauth("auth0") {
-            client = HttpClient(CIO)
-            providerLookup = {
-                OAuthServerSettings.OAuth2ServerSettings(
-                    name = "auth0",
-                    authorizeUrl = "https://$domain/authorize",
-                    accessTokenUrl = "https://$domain/oauth/token",
-                    clientId = clientId,
-                    clientSecret = clientSecret,
-                    defaultScopes = listOf("openid", "profile", "email")
-                )
+        jwt("jwtAuth") {
+            val jwtIssuer = "https://$domain/"
+            val jwtAudience = audience
+
+            realm = "ktor jwtAuth"
+            verifier(
+                JWT
+                    .require(Algorithm.HMAC256(clientSecret))
+                    .withIssuer(jwtIssuer)
+//                    .withAudience(jwtAudience) //todo
+                    .build()
+            )
+            validate { credential ->
+                if (credential.payload.getClaim("email_verified").asBoolean()) {
+                    JWTPrincipal(credential.payload)
+                } else {
+                    null
+                }
             }
-            urlProvider = { "$callbackUrl" }
         }
     }
 

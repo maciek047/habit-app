@@ -21,18 +21,18 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
 import io.ktor.server.sessions.clear
 import io.ktor.server.sessions.sessions
-import io.ktor.util.pipeline.PipelineContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.util.UUID
 
 fun Route.authRouting(authConfig: AuthConfig) {
 
@@ -45,17 +45,22 @@ fun Route.authRouting(authConfig: AuthConfig) {
     val callbackUrl = authConfig.callbackUrl
 
 
-    get("/habits") {
-        authenticate(authConfig) { userSession ->
-            logger.info("fetching habits for user ${userSession.userId}")
-            val userId = UUID.fromString(userSession.userId)
+    authenticate {
+        get("/habits") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val email = principal?.payload?.getClaim("email")?.asString() ?: throw Exception("No email found in JWT")
+            println("principal email: $email")
+            val user = createUserIfNotExists(email)
+
             val response =
                 either<AppError, WeeklyHabitsResponse> {
-                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(userId))
+                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(user.id.value))
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
+
         }
     }
+
 
     get("/callback") {
         val code = call.parameters["code"] ?: error("No code received")
@@ -124,21 +129,21 @@ fun Route.authRouting(authConfig: AuthConfig) {
 
 }
 
-suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(
-    authConfig: AuthConfig,
-    function: suspend (userSession: UserSession) -> Unit
-) {
-    val userSession = call.sessions.get("user_session_cookie") as UserSession?
-    val cookie = call.request.cookies["user_session_cookie"]
-    println("cookie: $cookie")
-    if (userSession == null) {
-        val auth0Url = "https://${authConfig.domain}/authorize?" +
-                "response_type=code&" +
-                "client_id=${authConfig.clientId}&" +
-                "redirect_uri=${authConfig.callbackUrl}&" +
-                "scope=openid%20profile%20email"
-        call.respondRedirect(auth0Url)
-    } else {
-        function(userSession)
-    }
-}
+//suspend fun PipelineContext<Unit, ApplicationCall>.authenticate(
+//    authConfig: AuthConfig,
+//    function: suspend (userSession: UserSession) -> Unit
+//) {
+//    val userSession = call.sessions.get("user_session_cookie") as UserSession?
+//    val cookie = call.request.cookies["user_session_cookie"]
+//    println("cookie: $cookie")
+//    if (userSession == null) {
+//        val auth0Url = "https://${authConfig.domain}/authorize?" +
+//                "response_type=code&" +
+//                "client_id=${authConfig.clientId}&" +
+//                "redirect_uri=${authConfig.callbackUrl}&" +
+//                "scope=openid%20profile%20email"
+//        call.respondRedirect(auth0Url)
+//    } else {
+//        function(userSession)
+//    }
+//}
