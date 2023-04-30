@@ -38,14 +38,12 @@ fun Route.mainRouting(authConfig: AuthConfig) {
 
 
     post("/habits") {
-        authenticate(authConfig) { userSession ->
             val response =
                 either<AppError, WeeklyHabitDto> {
                     val request = call.receive<HabitCreateRequest>()
                     createHabit(request.habitName, request.days).toWeeklyHabitDto()
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
-        }
     }
 
     post("/habits/stats") {
