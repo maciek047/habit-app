@@ -45,7 +45,7 @@ fun Route.authRouting(authConfig: AuthConfig) {
     val callbackUrl = authConfig.callbackUrl
 
 
-    authenticate {
+    authenticate("jwtAuth") {
         get("/habits") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val email = principal?.payload?.getClaim("email")?.asString() ?: throw Exception("No email found in JWT")
