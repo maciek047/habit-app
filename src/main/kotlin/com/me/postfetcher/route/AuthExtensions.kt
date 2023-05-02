@@ -68,7 +68,7 @@ fun String.toUserAuthProfile(): UserAuthProfile {
 
 suspend fun PipelineContext<Unit, ApplicationCall>.ensureUserExists(): User {
     val principal = call.authentication.principal<JWTPrincipal>()
-    val sub = principal?.payload?.getClaim("sub")?.asString() ?: throw Exception("No sub found in JWT")
+    val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
 
     return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
 }
