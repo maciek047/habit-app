@@ -57,6 +57,7 @@ fun Application.setup(dep: Dependencies) {
 
     val domain = System.getenv("AUTH0_DOMAIN")
     val clientId = System.getenv("AUTH0_CLIENT_ID")
+    println("clientId: $clientId")
     val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
     val audience = System.getenv("AUTH0_AUDIENCE")
     val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
