@@ -101,6 +101,11 @@ fun Application.setup(dep: Dependencies) {
                     .build()
             )
             validate { credential ->
+                println("validating credentials")
+                println("expires at: ${credential.expiresAt}")
+                println("subject: ${credential.payload.subject}")
+                println("email claim ${credential.payload.getClaim("email").asString()}")
+                println("credential.payload: ${credential.payload}")
                 if (credential.payload.getClaim("email_verified").asBoolean()) {
                     JWTPrincipal(credential.payload)
                 } else {
