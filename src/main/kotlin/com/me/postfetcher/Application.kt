@@ -61,7 +61,6 @@ fun validateCreds(credential: JWTCredential): JWTPrincipal? {
 
 fun Application.setup(dep: Dependencies) {
 
-
     val domain = System.getenv("AUTH0_DOMAIN")
     val clientId = System.getenv("AUTH0_CLIENT_ID")
     val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
@@ -102,31 +101,6 @@ fun Application.setup(dep: Dependencies) {
             verifier(jwkProvider, "https://$domain/")
             validate { credential -> validateCreds(credential) }
         }
-//        jwt("jwtAuth") {
-//            val jwtIssuer = "https://$domain/"
-//            val jwtAudience = audience
-//
-//            realm = "ktor jwtAuth"
-//            verifier(
-//                JWT
-//                    .require(Algorithm.HMAC256(clientSecret))
-//                    .withIssuer(jwtIssuer)
-////                    .withAudience(jwtAudience) //todo
-//                    .build()
-//            )
-//            validate { credential ->
-//                println("validating credentials")
-//                println("expires at: ${credential.expiresAt}")
-//                println("subject: ${credential.payload.subject}")
-//                println("email claim ${credential.payload.getClaim("email").asString()}")
-//                println("credential.payload: ${credential.payload}")
-//                if (credential.payload.getClaim("email_verified").asBoolean()) {
-//                    JWTPrincipal(credential.payload)
-//                } else {
-//                    null
-//                }
-//            }
-//        }
     }
 
     install(ContentNegotiation) {
