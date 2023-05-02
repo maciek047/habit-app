@@ -33,7 +33,7 @@ suspend fun createUser(userAuthProfile: UserAuthProfile): User {
         User.new {
             this.sub = userAuthProfile.sub
             this.email = userAuthProfile.email
-            this.name = userAuthProfile.email
+            this.name = userAuthProfile.name
             this.createdAt = LocalDateTime.now()
         }
     }
@@ -48,6 +48,6 @@ suspend fun findUserByEmail(email: String): User? {
 
 suspend fun findUserBySub(sub: String): User? {
     return newSuspendedTransaction {
-        User.find { Users.email eq sub }.firstOrNull()
+        User.find { Users.sub eq sub }.firstOrNull()
     }
 }

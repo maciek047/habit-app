@@ -75,6 +75,7 @@ suspend fun PipelineContext<Unit, ApplicationCall>.ensureUserExists(): User {
 
 suspend fun createUserFromAuthProfile(accessToken: String): User {
     val userAuthProfile = getUserInfoFromToken(accessToken)
+    println("Creating user from auth profile: ${userAuthProfile.email}")
     return createUser(userAuthProfile)
 }
 
