@@ -22,10 +22,6 @@ import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.routing.routing
-import io.ktor.server.sessions.SessionTransportTransformerMessageAuthentication
-import io.ktor.server.sessions.Sessions
-import io.ktor.server.sessions.cookie
-import io.ktor.util.hex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -52,13 +48,22 @@ data class AuthConfig(
     val sessionSignKey: String
 )
 
+fun validateCreds(credential: JWTCredential): JWTPrincipal? {
+    val containsAudience = credential.payload.audience.contains(System.getenv("AUTH0_AUDIENCE"))
+    println("credential.payload.audience: ${credential.payload.audience.joinToString()}")
+
+    if (containsAudience) {
+        return JWTPrincipal(credential.payload)
+    }
+
+    return null
+}
 
 fun Application.setup(dep: Dependencies) {
 
 
     val domain = System.getenv("AUTH0_DOMAIN")
     val clientId = System.getenv("AUTH0_CLIENT_ID")
-    println("clientId: $clientId")
     val clientSecret = System.getenv("AUTH0_CLIENT_SECRET")
     val audience = System.getenv("AUTH0_AUDIENCE")
     val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
@@ -74,39 +79,27 @@ fun Application.setup(dep: Dependencies) {
     )
 
 
-    install(Sessions) {
-        cookie<UserSession>("user_session_cookie") {
-            val secretSignKey = hex(sessionSignKey)
-            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
-            cookie.path = "/"
-            cookie.extensions["SameSite"] = "none"
-            cookie.httpOnly = true
-            cookie.secure = true
-            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
-        }
-    }
+//    install(Sessions) {
+//        cookie<UserSession>("user_session_cookie") {
+//            val secretSignKey = hex(sessionSignKey)
+//            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
+//            cookie.path = "/"
+//            cookie.extensions["SameSite"] = "none"
+//            cookie.httpOnly = true
+//            cookie.secure = true
+//            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
+//        }
+//    }
 
     val jwkProvider = JwkProviderBuilder("https://$domain/")
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build()
 
-    fun validateCreds(credential: JWTCredential): JWTPrincipal? {
-        val containsAudience = credential.payload.audience.contains(System.getenv("AUTH0_AUDIENCE"))
-        println("credential.payload.audience: ${credential.payload.audience.joinToString()}")
-
-        if (containsAudience) {
-            return JWTPrincipal(credential.payload)
-        }
-
-        return null
-    }
-
-
 
     install(Authentication) {
         jwt("auth0") {
-            verifier(jwkProvider, System.getenv("AUTH0_AUDIENCE"))
+            verifier(jwkProvider, "https://$domain/")
             validate { credential -> validateCreds(credential) }
         }
 //        jwt("jwtAuth") {
@@ -159,6 +152,7 @@ fun Application.setup(dep: Dependencies) {
         allowHost("localhost:3000", schemes = listOf("http", "https"))
         allowHost("localhost:8000", schemes = listOf("http", "https"))
         allowSameOrigin = true
+        allowNonSimpleContentTypes = true
 //        anyHost() // @TODO Fix for production.
     }
 
