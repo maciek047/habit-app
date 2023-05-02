@@ -41,9 +41,14 @@ fun Route.mainRouting(authConfig: AuthConfig) {
 
     val logger = mu.KotlinLogging.logger {}
 
-    authenticateUser {
+    authenticate("auth0") {
         get("/habits") {
-            val user = call.attributes[UserKey]
+//            val user = call.attributes[UserKey]
+//            println("user email: ${user.email}")
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            println("sub: $sub")
+            val user = createUserFromAuthProfile(accessTokenFromCall(call))
             println("user email: ${user.email}")
 
             val response =
@@ -51,7 +56,6 @@ fun Route.mainRouting(authConfig: AuthConfig) {
                     WeeklyHabitsResponse(fetchHabitsWithPlannedDays(user.id.value))
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
-
         }
     }
 
@@ -60,8 +64,8 @@ fun Route.mainRouting(authConfig: AuthConfig) {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
             println("sub: $sub")
-            //            val user = call.attributes[UserKey]
-//            println("user email: ${user.email}")
+            val user = createUserFromAuthProfile(accessTokenFromCall(call))
+
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
                     HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
