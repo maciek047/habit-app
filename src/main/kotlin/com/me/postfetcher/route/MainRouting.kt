@@ -12,6 +12,7 @@ import com.me.postfetcher.database.model.editHabit
 import com.me.postfetcher.database.model.editTodayHabitDay
 import com.me.postfetcher.database.model.fetchHabitMetrics
 import com.me.postfetcher.database.model.fetchHabitStats
+import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
@@ -21,6 +22,7 @@ import com.me.postfetcher.route.dto.HabitStatsRequest
 import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitDto
+import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -36,14 +38,39 @@ fun Route.mainRouting(authConfig: AuthConfig) {
 
     val logger = mu.KotlinLogging.logger {}
 
+    authenticateUser {
+        get("/habits") {
+            val user = call.attributes[UserKey]
+            println("user email: ${user.email}")
 
-    post("/habits") {
             val response =
-                either<AppError, WeeklyHabitDto> {
-                    val request = call.receive<HabitCreateRequest>()
-                    createHabit(request.habitName, request.days).toWeeklyHabitDto()
+                either<AppError, WeeklyHabitsResponse> {
+                    WeeklyHabitsResponse(fetchHabitsWithPlannedDays(user.id.value))
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
+
+        }
+    }
+
+    authenticateUser {
+        get("/habits/today") {
+            val user = call.attributes[UserKey]
+            println("user email: ${user.email}")
+            val response =
+                either<AppError, HabitTasksForTodayResponse> {
+                    HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
+    }
+
+    post("/habits") {
+        val response =
+            either<AppError, WeeklyHabitDto> {
+                val request = call.receive<HabitCreateRequest>()
+                createHabit(request.habitName, request.days).toWeeklyHabitDto()
+            }.toApiResponse(HttpStatusCode.OK)
+        call.apiResponse(response)
     }
 
     post("/habits/stats") {
@@ -65,13 +92,7 @@ fun Route.mainRouting(authConfig: AuthConfig) {
     }
 
 
-    get("/habits/today") {
-        val response =
-            either<AppError, HabitTasksForTodayResponse> {
-                HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
-    }
+
 
     put("habits/today/{id}/complete/{completed}") {
         val response =
@@ -112,7 +133,4 @@ fun Route.mainRouting(authConfig: AuthConfig) {
         call.apiResponse(response)
     }
 
-
 }
-
-
