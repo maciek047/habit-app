@@ -18,7 +18,6 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.header
 import io.ktor.server.routing.Route
 import io.ktor.util.AttributeKey
-import io.ktor.util.pipeline.PipelineContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
@@ -31,7 +30,7 @@ fun Route.authenticateUser(
 ): Route {
     val authRoute = authenticate(*configurations, optional = optional) { build() }
     authRoute.intercept(ApplicationCallPipeline.Plugins) {
-        val user = ensureUserExists()
+        val user = call.ensureUserExists()
         call.attributes.put(UserKey, user)
     }
 
@@ -66,11 +65,11 @@ fun String.toUserAuthProfile(): UserAuthProfile {
 //    }
 //}
 
-suspend fun PipelineContext<Unit, ApplicationCall>.ensureUserExists(): User {
-    val principal = call.authentication.principal<JWTPrincipal>()
+suspend fun ApplicationCall.ensureUserExists(): User {
+    val principal = authentication.principal<JWTPrincipal>()
     val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
 
-    return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+    return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(this))
 }
 
 suspend fun createUserFromAuthProfile(accessToken: String): User {

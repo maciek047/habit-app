@@ -25,6 +25,9 @@ import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.authentication
+import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.receive
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
@@ -52,10 +55,13 @@ fun Route.mainRouting(authConfig: AuthConfig) {
         }
     }
 
-    authenticateUser {
+    authenticate("auth0") {
         get("/habits/today") {
-            val user = call.attributes[UserKey]
-            println("user email: ${user.email}")
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            println("sub: $sub")
+            //            val user = call.attributes[UserKey]
+//            println("user email: ${user.email}")
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
                     HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
