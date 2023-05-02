@@ -1,20 +1,20 @@
 package com.me.postfetcher
 
+import com.auth0.jwk.JwkProviderBuilder
 import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
 import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
-import io.ktor.server.auth.OAuthServerSettings
-import io.ktor.server.auth.oauth
+import io.ktor.server.auth.jwt.JWTCredential
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
@@ -29,6 +29,7 @@ import io.ktor.util.hex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import java.util.concurrent.TimeUnit
 
 fun main() = runBlocking<Unit>(Dispatchers.Default) {
 
@@ -85,22 +86,27 @@ fun Application.setup(dep: Dependencies) {
         }
     }
 
+    val jwkProvider = JwkProviderBuilder(System.getenv("AUTH0_DOMAIN"))
+        .cached(10, 24, TimeUnit.HOURS)
+        .rateLimited(10, 1, TimeUnit.MINUTES)
+        .build()
+
+    fun validateCreds(credential: JWTCredential): JWTPrincipal? {
+        val containsAudience = credential.payload.audience.contains(System.getenv("AUDIENCE"))
+
+        if (containsAudience) {
+            return JWTPrincipal(credential.payload)
+        }
+
+        return null
+    }
+
 
 
     install(Authentication) {
-        oauth("auth0") {
-            client = HttpClient(CIO)
-            providerLookup = {
-                OAuthServerSettings.OAuth2ServerSettings(
-                    name = "auth0",
-                    authorizeUrl = "https://$domain/authorize",
-                    accessTokenUrl = "https://$domain/oauth/token",
-                    clientId = clientId,
-                    clientSecret = clientSecret,
-                    defaultScopes = listOf("openid", "profile", "email")
-                )
-            }
-            urlProvider = { "$callbackUrl" }
+        jwt("auth0") {
+            verifier(jwkProvider, System.getenv("AUTH0_AUDIENCE"))
+            validate { credential -> validateCreds(credential) }
         }
 //        jwt("jwtAuth") {
 //            val jwtIssuer = "https://$domain/"
