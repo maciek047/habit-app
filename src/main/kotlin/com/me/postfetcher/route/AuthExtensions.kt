@@ -94,5 +94,6 @@ suspend fun getUserInfoFromToken(token: String): UserAuthProfile {
         }
     }.body()
 
+    println("User info response: $userInfoResponse")
     return userInfoResponse.toUserAuthProfile()
 }

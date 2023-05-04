@@ -14,6 +14,7 @@ import com.me.postfetcher.database.model.fetchHabitMetrics
 import com.me.postfetcher.database.model.fetchHabitStats
 import com.me.postfetcher.database.model.fetchHabitsWithPlannedDays
 import com.me.postfetcher.database.model.fetchTodayHabits
+import com.me.postfetcher.database.model.findUserBySub
 import com.me.postfetcher.database.model.toWeeklyHabitDto
 import com.me.postfetcher.route.dto.HabitCreateRequest
 import com.me.postfetcher.route.dto.HabitEditRequest
@@ -48,7 +49,7 @@ fun Route.mainRouting(authConfig: AuthConfig) {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
             println("sub: $sub")
-            val user = createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
             println("user email: ${user.email}")
 
             val response =
@@ -64,7 +65,8 @@ fun Route.mainRouting(authConfig: AuthConfig) {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
             println("sub: $sub")
-            val user = createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            //todo!!
 
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
