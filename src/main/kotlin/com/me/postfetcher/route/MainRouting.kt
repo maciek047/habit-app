@@ -2,7 +2,6 @@ package com.me.postfetcher.route
 
 import arrow.core.continuations.either
 import com.me.postfetcher.AppError
-import com.me.postfetcher.AuthConfig
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
 import com.me.postfetcher.common.extensions.toLocalDate
@@ -38,19 +37,15 @@ import io.ktor.server.routing.put
 import java.time.LocalDate
 import java.util.UUID
 
-fun Route.mainRouting(authConfig: AuthConfig) {
+fun Route.mainRouting() {
 
     val logger = mu.KotlinLogging.logger {}
 
     authenticate("auth0") {
         get("/habits") {
-//            val user = call.attributes[UserKey]
-//            println("user email: ${user.email}")
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            println("sub: $sub")
             val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
-            println("user email: ${user.email}")
 
             val response =
                 either<AppError, WeeklyHabitsResponse> {
@@ -64,76 +59,106 @@ fun Route.mainRouting(authConfig: AuthConfig) {
         get("/habits/today") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            println("sub: $sub")
             val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
-            //todo!!
 
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
-                    HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
+                    HabitTasksForTodayResponse(fetchTodayHabits(user.id.value), LocalDate.now().dayOfWeek.value - 1)
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)
         }
     }
 
-    post("/habits") {
-        val response =
-            either<AppError, WeeklyHabitDto> {
-                val request = call.receive<HabitCreateRequest>()
-                createHabit(request.habitName, request.days).toWeeklyHabitDto()
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
+    authenticate("auth0") {
+        post("/habits") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+
+            val response =
+                either<AppError, WeeklyHabitDto> {
+                    val request = call.receive<HabitCreateRequest>()
+                    createHabit(user.id.value, request.habitName, request.days).toWeeklyHabitDto()
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
     }
 
-    post("/habits/stats") {
-        val response =
-            either<AppError, HabitStatsResponse> {
-                val request = call.receive<HabitStatsRequest>()
-                HabitStatsResponse(fetchHabitStats(request.startDate.toLocalDate(), request.endDate.toLocalDate()))
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
+    authenticate("auth0") {
+        post("/habits/stats") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+
+            val response =
+                either<AppError, HabitStatsResponse> {
+                    val request = call.receive<HabitStatsRequest>()
+                    HabitStatsResponse(
+                        fetchHabitStats(
+                            userId = user.id.value,
+                            startDate = request.startDate.toLocalDate(),
+                            endDate = request.endDate.toLocalDate()
+                        )
+                    )
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
     }
 
-    get("/habits/completion-metrics") {
-        val response =
-            either<AppError, HabitMetricsResponse> {
-                logger.info("fetching habit metrics")
-                fetchHabitMetrics()
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
+    authenticate("auth0") {
+        get("/habits/completion-metrics") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+
+            val response =
+                either<AppError, HabitMetricsResponse> {
+                    logger.info("fetching habit metrics")
+                    fetchHabitMetrics(user.id.value)
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
     }
 
+    authenticate("auth0") {
+        put("habits/today/{id}/complete/{completed}") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
 
-
-
-    put("habits/today/{id}/complete/{completed}") {
-        val response =
-            either<AppError, HabitTasksForTodayResponse> {
-                val id = call.parameters["id"] ?: throw Exception("Habit id is required")
-                val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
-                logger.warn("id: $id, completed: $completed")
-                val editedDay = editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
-                logger.warn("editedDay is completed: ${editedDay.completed}")
-                HabitTasksForTodayResponse(fetchTodayHabits(), LocalDate.now().dayOfWeek.value - 1)
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
+            val response =
+                either<AppError, HabitTasksForTodayResponse> {
+                    val id = call.parameters["id"] ?: throw Exception("Habit id is required")
+                    val completed = call.parameters["completed"] ?: throw Exception("Completed is required")
+                    logger.warn("id: $id, completed: $completed")
+                    val editedDay = editTodayHabitDay(UUID.fromString(id), completed.toBoolean())
+                    logger.warn("editedDay is completed: ${editedDay.completed}")
+                    HabitTasksForTodayResponse(fetchTodayHabits(user.id.value), LocalDate.now().dayOfWeek.value - 1)
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
     }
 
+    authenticate("auth0") {
+        put("/habits/{id}") {
+            val principal = call.authentication.principal<JWTPrincipal>()
+            val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
+            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
 
-
-    put("/habits/{id}") {
-        val response =
-            either<AppError, WeeklyHabitDto> {
-                val id = call.parameters["id"] ?: throw Exception("Habit id is required")
-                val request = call.receive<HabitEditRequest>()
-                editHabit(
-                    id = id,
-                    name = request.habitName,
-                    days = request.days.map { it.dayOfWeek },
-                    completedDays = request.days.filter { it.completed }.map { it.dayOfWeek }
-                ).toWeeklyHabitDto()
-            }.toApiResponse(HttpStatusCode.OK)
-        call.apiResponse(response)
+            val response =
+                either<AppError, WeeklyHabitDto> {
+                    val id = call.parameters["id"] ?: throw Exception("Habit id is required")
+                    val request = call.receive<HabitEditRequest>()
+                    editHabit(
+                        userId = user.id.value,
+                        id = id,
+                        name = request.habitName,
+                        days = request.days.map { it.dayOfWeek },
+                        completedDays = request.days.filter { it.completed }.map { it.dayOfWeek }
+                    ).toWeeklyHabitDto()
+                }.toApiResponse(HttpStatusCode.OK)
+            call.apiResponse(response)
+        }
     }
 
     delete("/habits/{id}") {
@@ -144,5 +169,4 @@ fun Route.mainRouting(authConfig: AuthConfig) {
             }.toApiResponse(HttpStatusCode.OK)
         call.apiResponse(response)
     }
-
 }

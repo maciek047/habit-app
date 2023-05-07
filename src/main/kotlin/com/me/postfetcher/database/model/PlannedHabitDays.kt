@@ -14,6 +14,7 @@ object PlannedHabitDays : UUIDTable() {
     val habitId = reference("habit_id", Habits)
     val day = integer("day")
     val completed = bool("completed").default(false)
+    val user = Habits.reference("user_id", Users)
 }
 
 val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
@@ -25,6 +26,8 @@ class PlannedHabitDay(id: EntityID<UUID>) : UUIDEntity(id) {
     var habitId by PlannedHabitDays.habitId
     var day by PlannedHabitDays.day
     var completed by PlannedHabitDays.completed
+    var user by PlannedHabitDays.user
+
 }
 
 fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): PlannedHabitDay {
@@ -32,9 +35,15 @@ fun editPlannedHabitDay(habitId: UUID, day: Int, completed: Boolean): PlannedHab
         plannedHabitDay.completed = completed
 
         val habitDate = getDateOfWeek(day + 1)
-        HabitExecution.find {
-            (HabitExecutions.plannedHabitDayId eq plannedHabitDay.id.value) and HabitExecutions.executionDate.eq(habitDate)
-        }.firstOrNull()?.let { it.completed = completed } ?: createHabitExecution(habitId, plannedHabitDay.id.value, day, completed)
+    HabitExecution.find {
+        (HabitExecutions.plannedHabitDayId eq plannedHabitDay.id.value) and HabitExecutions.executionDate.eq(habitDate)
+    }.firstOrNull()?.let { it.completed = completed } ?: createHabitExecution(
+        plannedHabitDay.user.value,
+        habitId,
+        plannedHabitDay.id.value,
+        day,
+        completed
+    )
         return plannedHabitDay
 }
 
@@ -46,23 +55,31 @@ suspend fun editTodayHabitDay(habitId: UUID, completed: Boolean): PlannedHabitDa
     }
 }
 
-fun createPlannedHabitDay(habitId: UUID, day: Int): PlannedHabitDay {
-        val plannedDay = PlannedHabitDay.new {
-            this.habitId = EntityID(habitId, Habits)
-            this.day = day
-            this.completed = false
-        }
+fun createPlannedHabitDay(userId: UUID, habitId: UUID, day: Int): PlannedHabitDay {
+    val plannedDay = PlannedHabitDay.new {
+        this.habitId = EntityID(habitId, Habits)
+        this.day = day
+        this.completed = false
+        this.user = EntityID(userId, Users)
+    }
 
-        val dateOfExecution = getDateOfWeek(day + 1)
-        if(!dateOfExecution.isBefore(LocalDateTime.now().toLocalDate())) {
-            createHabitExecution(habitId, plannedDay.id.value, day)
-        }
+    val dateOfExecution = getDateOfWeek(day + 1)
+    if (!dateOfExecution.isBefore(LocalDateTime.now().toLocalDate())) {
+        createHabitExecution(
+            userId = userId,
+            habitId = habitId,
+            plannedHabitDayId = plannedDay.id.value,
+            dayOfWeek = day
+        )
+    }
 
         return plannedDay
 }
 
 suspend fun fetchPlannedHabitDaysById(habitId: UUID): List<PlannedHabitDay> {
     return newSuspendedTransaction {
-        PlannedHabitDay.find { PlannedHabitDays.habitId eq habitId }.toList()
+        PlannedHabitDay.find {
+            (PlannedHabitDays.habitId eq habitId)
+        }.toList()
     }
 }

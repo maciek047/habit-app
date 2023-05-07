@@ -3,6 +3,7 @@ package com.me.postfetcher.database.model
 import com.me.postfetcher.database.formatDate
 import com.me.postfetcher.database.getDateOfWeek
 import com.me.postfetcher.database.model.HabitExecutions.executionDate
+import com.me.postfetcher.database.model.HabitExecutions.user
 import com.me.postfetcher.route.dto.HabitDayDto
 import com.me.postfetcher.route.dto.HabitMetricsDto
 import com.me.postfetcher.route.dto.HabitMetricsResponse
@@ -37,6 +38,7 @@ object Habits : UUIDTable() {
     val name = varchar("name", 255)
     val description = varchar("description", 255)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
+    val user = reference("user_id", Users)
 }
 
 class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
@@ -45,40 +47,48 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by Habits.name
     var description by Habits.description
     var createdAt by Habits.createdAt
-//    var userId by Users.id
+    var user by Habits.user
 }
 
-suspend fun createHabit(name: String, days: List<Int>, description: String = ""): Habit {
+suspend fun createHabit(userId: UUID, name: String, days: List<Int>, description: String = ""): Habit {
     return newSuspendedTransaction {
-    val createdHabit =
-        Habit.new {
-            this.name = name
-            this.description = description
-            this.createdAt = LocalDateTime.now()
-        }
+        val createdHabit =
+            Habit.new {
+                this.name = name
+                this.description = description
+                this.createdAt = LocalDateTime.now()
+                this.user = EntityID(userId, Users)
+            }
 
-    days.forEach { day ->
-        createPlannedHabitDay(createdHabit.id.value, day)
-    }
+        days.forEach { day ->
+            createPlannedHabitDay(
+                userId = userId,
+                habitId = createdHabit.id.value,
+                day = day
+            )
+        }
      createdHabit
     }
 }
 
-suspend fun fetchHabits(): List<Habit> {
+suspend fun fetchHabits(userId: UUID): List<Habit> {
     return newSuspendedTransaction {
-        Habit.all().sortedBy { Habits.createdAt }.toList()
+        Habit.find { Habits.user eq userId }.sortedBy { Habits.createdAt }.toList()
     }
 }
 
-suspend fun fetchTodayHabits(): List<HabitTaskDto> {
+suspend fun fetchTodayHabits(userId: UUID): List<HabitTaskDto> {
     val today = LocalDate.now().dayOfWeek.value - 1
-    return fetchHabitTasksForGivenDay(today)
+    return fetchHabitTasksForGivenDay(userId, today)
 }
 
-suspend fun fetchHabitTasksForGivenDay(day: Int): List<HabitTaskDto> {
+suspend fun fetchHabitTasksForGivenDay(userId: UUID, day: Int): List<HabitTaskDto> {
     return newSuspendedTransaction {
         Habits.innerJoin(PlannedHabitDays, onColumn = { Habits.id }, otherColumn = { habitId })
-            .select { PlannedHabitDays.day eq day }
+            .select {
+                (Habits.user eq userId) and
+                        (PlannedHabitDays.day eq day)
+            }
             .orderBy(Habits.createdAt)
             .map { row ->
                 val id = row[Habits.id].toString()
@@ -89,8 +99,8 @@ suspend fun fetchHabitTasksForGivenDay(day: Int): List<HabitTaskDto> {
     }
 }
 
-suspend fun fetchHabitMetrics(): HabitMetricsResponse {
-    ensureHabitExecutionsForCurrentWeekExist()
+suspend fun fetchHabitMetrics(userId: UUID): HabitMetricsResponse {
+    ensureHabitExecutionsForCurrentWeekExist(userId)
     val startDate = LocalDate.now().minusMonths(3)
     val endDate = LocalDate.now()
 
@@ -110,7 +120,10 @@ suspend fun fetchHabitMetrics(): HabitMetricsResponse {
                 completedCountAlias,
                 totalCountAlias
             )
-            .select { executionDate.between(startDate, endDate) }
+            .select {
+                (user eq userId) and
+                        (executionDate.between(startDate, endDate))
+            }
             .groupBy(executionDate)
             .map { row ->
                 val date = row[executionDate]
@@ -122,7 +135,7 @@ suspend fun fetchHabitMetrics(): HabitMetricsResponse {
     return HabitMetricsResponse(startDate.toString(), endDate.toString(), daysList)
 }
 
-suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<HabitStatsDto> {
+suspend fun fetchHabitStats(userId: UUID, startDate: LocalDate, endDate: LocalDate): List<HabitStatsDto> {
     val completedCountAlias = Sum(
         Case()
             .When(HabitExecutions.completed eq true, intLiteral(1))
@@ -132,7 +145,7 @@ suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<Habi
 
     val totalCountAlias = executionDate.count().alias("total_count")
 
-    return  newSuspendedTransaction {
+    return newSuspendedTransaction {
         HabitExecutions.join(Habits, JoinType.INNER, onColumn = HabitExecutions.habitId, otherColumn = Habits.id)
             .slice(
                 Habits.id,
@@ -140,7 +153,10 @@ suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<Habi
                 completedCountAlias,
                 totalCountAlias
             )
-            .select { executionDate.between(startDate, endDate) }
+            .select {
+                (user eq userId) and
+                        (executionDate.between(startDate, endDate))
+            }
             .groupBy(Habits.id, Habits.name)
             .map { row ->
                 val habitName = row[Habits.name]
@@ -152,8 +168,8 @@ suspend fun fetchHabitStats(startDate: LocalDate, endDate: LocalDate): List<Habi
 }
 
 suspend fun fetchHabitsWithPlannedDays(userId: UUID): List<WeeklyHabitDto> {
-    ensureHabitExecutionsForCurrentWeekExist()
-    return fetchHabits().map { habit ->
+    ensureHabitExecutionsForCurrentWeekExist(userId)
+    return fetchHabits(userId).map { habit ->
         val plannedDays = fetchPlannedHabitDaysById(habit.id.value)
         WeeklyHabitDto(
             id = habit.id.value.toString(),
@@ -172,7 +188,7 @@ suspend fun fetchHabitsWithPlannedDays(userId: UUID): List<WeeklyHabitDto> {
 
 val DAYS_OF_WEEK = listOf(0,1,2,3,4,5,6)
 
-suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: List<Int>): Habit {
+suspend fun editHabit(userId: UUID, id: String, name: String, days: List<Int>, completedDays: List<Int>): Habit {
     return newSuspendedTransaction {
         val today = LocalDate.now().dayOfWeek.value - 1
         val habitDaysToDelete = DAYS_OF_WEEK.filter { !days.contains(it) }
@@ -188,7 +204,7 @@ suspend fun editHabit(id: String, name: String, days: List<Int>, completedDays: 
         val plannedDays = fetchPlannedHabitDaysById(UUID.fromString(id)).map { it.day }
         days.forEach { day ->
             if (!plannedDays.contains(day)) {
-                createPlannedHabitDay(UUID.fromString(id), day)
+                createPlannedHabitDay(userId, UUID.fromString(id), day)
             } else {
                 editPlannedHabitDay(UUID.fromString(id), day, completedDays.contains(day))
             }

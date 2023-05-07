@@ -4,7 +4,6 @@ import com.auth0.jwk.JwkProviderBuilder
 import com.me.postfetcher.common.dependency.Dependencies
 import com.me.postfetcher.common.dependency.dependencies
 import com.me.postfetcher.database.DatabaseConfig
-import com.me.postfetcher.route.authRouting
 import com.me.postfetcher.route.mainRouting
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -77,19 +76,6 @@ fun Application.setup(dep: Dependencies) {
         sessionSignKey = sessionSignKey
     )
 
-
-//    install(Sessions) {
-//        cookie<UserSession>("user_session_cookie") {
-//            val secretSignKey = hex(sessionSignKey)
-//            transform(SessionTransportTransformerMessageAuthentication(secretSignKey))
-//            cookie.path = "/"
-//            cookie.extensions["SameSite"] = "none"
-//            cookie.httpOnly = true
-//            cookie.secure = true
-//            cookie.maxAgeInSeconds = 7 * 24 * 60 * 60 // 1 week
-//        }
-//    }
-
     val jwkProvider = JwkProviderBuilder("https://$domain/")
         .cached(10, 24, TimeUnit.HOURS)
         .rateLimited(10, 1, TimeUnit.MINUTES)
@@ -127,12 +113,10 @@ fun Application.setup(dep: Dependencies) {
         allowHost("localhost:8000", schemes = listOf("http", "https"))
         allowSameOrigin = true
         allowNonSimpleContentTypes = true
-//        anyHost() // @TODO Fix for production.
     }
 
     routing {
-        authRouting(authConfig)
-        mainRouting(authConfig)
+        mainRouting()
     }
     runBlocking {
         DatabaseConfig.connect()

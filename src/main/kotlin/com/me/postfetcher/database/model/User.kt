@@ -14,8 +14,12 @@ object Users : UUIDTable() {
     val sub = varchar("sub", 255)
     val name = varchar("name", 255).nullable()
     val email = varchar("email", 255).nullable()
-
-    //todo add more fields
+    val emailVerified = bool("email_verified").default(false)
+    val locale = varchar("locale", 255).nullable()
+    val givenName = varchar("given_name", 255).nullable()
+    val familyName = varchar("family_name", 255).nullable()
+    val nickname = varchar("nickname", 255).nullable()
+    val picture = varchar("picture", 1000).nullable()
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 
@@ -25,6 +29,12 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var sub by Users.sub
     var name by Users.name
     var email by Users.email
+    var emailVerified by Users.emailVerified
+    var locale by Users.locale
+    var givenName by Users.givenName
+    var familyName by Users.familyName
+    var nickname by Users.nickname
+    var picture by Users.picture
     var createdAt by Users.createdAt
 }
 
@@ -34,14 +44,14 @@ suspend fun createUser(userAuthProfile: UserAuthProfile): User {
             this.sub = userAuthProfile.sub
             this.email = userAuthProfile.email
             this.name = userAuthProfile.name
+            this.emailVerified = userAuthProfile.emailVerified
+            this.locale = userAuthProfile.locale
+            this.givenName = userAuthProfile.givenName
+            this.familyName = userAuthProfile.familyName
+            this.nickname = userAuthProfile.nickname
+            this.picture = userAuthProfile.picture
             this.createdAt = LocalDateTime.now()
         }
-    }
-}
-
-suspend fun findUserByEmail(email: String): User? {
-    return newSuspendedTransaction {
-        User.find { Users.email eq email }.firstOrNull()
     }
 }
 

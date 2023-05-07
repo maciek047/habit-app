@@ -54,17 +54,6 @@ fun String.toUserAuthProfile(): UserAuthProfile {
     )
 }
 
-//suspend fun ApplicationCall.ensureUserExists(): User {
-//    val principal = authentication.principal<JWTPrincipal>()
-//    val sub = principal?.payload?.getClaim("sub")?.asString() ?: throw Exception("No sub found in JWT")
-//
-//    return findUserBySub(sub) ?: run {
-//        val accessToken = request.header("Authorization")?.removePrefix("Bearer ")
-//        val userAuthProfile = getUserInfoFromToken(accessToken ?: throw Exception("No access token found"))
-//        createUser(userAuthProfile)
-//    }
-//}
-
 suspend fun ApplicationCall.ensureUserExists(): User {
     val principal = authentication.principal<JWTPrincipal>()
     val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
@@ -72,11 +61,8 @@ suspend fun ApplicationCall.ensureUserExists(): User {
     return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(this))
 }
 
-suspend fun createUserFromAuthProfile(accessToken: String): User {
-    val userAuthProfile = getUserInfoFromToken(accessToken)
-    println("Creating user from auth profile: ${userAuthProfile.email}")
-    return createUser(userAuthProfile)
-}
+suspend fun createUserFromAuthProfile(accessToken: String): User = createUser(getUserInfoFromToken(accessToken))
+
 
 fun accessTokenFromCall(call: ApplicationCall): String {
     return call.request.header("Authorization")?.removePrefix("Bearer ")
@@ -93,7 +79,5 @@ suspend fun getUserInfoFromToken(token: String): UserAuthProfile {
             append(HttpHeaders.Authorization, "Bearer $token")
         }
     }.body()
-
-    println("User info response: $userInfoResponse")
     return userInfoResponse.toUserAuthProfile()
 }
