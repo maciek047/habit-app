@@ -34,18 +34,23 @@ import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.util.UUID
 
 fun Route.mainRouting() {
 
     val logger = mu.KotlinLogging.logger {}
+    val userCreationMutex = Mutex()
 
     authenticate("auth0") {
         get("/habits") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
 
             val response =
                 either<AppError, WeeklyHabitsResponse> {
@@ -59,8 +64,9 @@ fun Route.mainRouting() {
         get("/habits/today") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
-
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
                     HabitTasksForTodayResponse(fetchTodayHabits(user.id.value), LocalDate.now().dayOfWeek.value - 1)
@@ -73,8 +79,9 @@ fun Route.mainRouting() {
         post("/habits") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
-
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
             val response =
                 either<AppError, WeeklyHabitDto> {
                     val request = call.receive<HabitCreateRequest>()
@@ -88,8 +95,9 @@ fun Route.mainRouting() {
         post("/habits/stats") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
-
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
             val response =
                 either<AppError, HabitStatsResponse> {
                     val request = call.receive<HabitStatsRequest>()
@@ -109,7 +117,9 @@ fun Route.mainRouting() {
         get("/habits/completion-metrics") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
 
             val response =
                 either<AppError, HabitMetricsResponse> {
@@ -124,7 +134,9 @@ fun Route.mainRouting() {
         put("habits/today/{id}/complete/{completed}") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
 
             val response =
                 either<AppError, HabitTasksForTodayResponse> {
@@ -143,7 +155,9 @@ fun Route.mainRouting() {
         put("/habits/{id}") {
             val principal = call.authentication.principal<JWTPrincipal>()
             val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-            val user = findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            val user = findUserBySub(sub) ?: userCreationMutex.withLock {
+                findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(call))
+            }
 
             val response =
                 either<AppError, WeeklyHabitDto> {
