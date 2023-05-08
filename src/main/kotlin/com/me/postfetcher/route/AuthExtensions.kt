@@ -18,6 +18,8 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.header
 import io.ktor.server.routing.Route
 import io.ktor.util.AttributeKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
@@ -61,8 +63,15 @@ suspend fun ApplicationCall.ensureUserExists(): User {
     return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(this))
 }
 
-suspend fun createUserFromAuthProfile(accessToken: String): User = createUser(getUserInfoFromToken(accessToken))
-
+suspend fun createUserFromAuthProfile(accessToken: String): User =
+    try {
+        createUser(getUserInfoFromToken(accessToken))
+    } catch (e: Exception) {
+        withContext(Dispatchers.IO) {
+            Thread.sleep(200)
+            findUserBySub(getUserInfoFromToken(accessToken).sub) ?: throw Exception("Failed to create user")
+        }
+    }
 
 fun accessTokenFromCall(call: ApplicationCall): String {
     return call.request.header("Authorization")?.removePrefix("Bearer ")

@@ -11,7 +11,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 object Users : UUIDTable() {
-    val sub = varchar("sub", 255)
+    val sub = varchar("sub", 255).uniqueIndex()
     val name = varchar("name", 255).nullable()
     val email = varchar("email", 255).nullable()
     val emailVerified = bool("email_verified").default(false)
@@ -54,7 +54,6 @@ suspend fun createUser(userAuthProfile: UserAuthProfile): User {
         }
     }
 }
-
 
 suspend fun findUserBySub(sub: String): User? {
     return newSuspendedTransaction {
