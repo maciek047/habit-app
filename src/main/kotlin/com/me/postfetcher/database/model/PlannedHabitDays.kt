@@ -14,7 +14,7 @@ object PlannedHabitDays : UUIDTable() {
     val habitId = reference("habit_id", Habits)
     val day = integer("day")
     val completed = bool("completed").default(false)
-    val user = Habits.reference("user_id", Users)
+    val user = Habits.reference(name = "user_id", foreign = Users, fkName = "habit_user_id")
 }
 
 val logger = org.slf4j.LoggerFactory.getLogger("MainRouting")
