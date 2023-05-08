@@ -16,12 +16,14 @@ import java.util.UUID
         val habitId = reference(
             name = "habit_id",
             foreign = Habits,
-            onDelete = ReferenceOption.SET_NULL
+            onDelete = ReferenceOption.SET_NULL,
+            fkName = "habit_user_id"
         ).nullable()
         val plannedHabitDayId = reference(
             name = "planned_habit_day_id",
             foreign = PlannedHabitDays,
-            onDelete = ReferenceOption.SET_NULL
+            onDelete = ReferenceOption.SET_NULL,
+            fkName = "planned_habit_day_user_id"
         ).nullable()
         val user = reference("user_id", Users)
         val executionDate = date("completion_date")
