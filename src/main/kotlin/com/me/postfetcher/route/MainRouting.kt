@@ -2,6 +2,8 @@ package com.me.postfetcher.route
 
 import arrow.core.continuations.either
 import com.me.postfetcher.AppError
+import com.me.postfetcher.AppError.ValidationError
+import com.me.postfetcher.common.extensions.ApiResponse.ErrorResponse
 import com.me.postfetcher.common.extensions.apiResponse
 import com.me.postfetcher.common.extensions.toApiResponse
 import com.me.postfetcher.common.extensions.toLocalDate
@@ -23,6 +25,7 @@ import com.me.postfetcher.route.dto.HabitStatsResponse
 import com.me.postfetcher.route.dto.HabitTasksForTodayResponse
 import com.me.postfetcher.route.dto.WeeklyHabitDto
 import com.me.postfetcher.route.dto.WeeklyHabitsResponse
+import com.me.postfetcher.route.dto.isValid
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.auth.authenticate
@@ -85,6 +88,14 @@ fun Route.mainRouting() {
             val response =
                 either<AppError, WeeklyHabitDto> {
                     val request = call.receive<HabitCreateRequest>()
+                    if (!request.isValid()) {
+                        call.apiResponse(
+                            ErrorResponse(
+                                HttpStatusCode.BadRequest,
+                                ValidationError("Habit name and days must be populated")
+                            )
+                        )
+                    }
                     createHabit(user.id.value, request.habitName, request.days).toWeeklyHabitDto()
                 }.toApiResponse(HttpStatusCode.OK)
             call.apiResponse(response)

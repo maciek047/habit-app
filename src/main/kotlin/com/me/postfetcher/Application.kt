@@ -111,6 +111,7 @@ fun Application.setup(dep: Dependencies) {
         allowHost("sleepy-spire-13018.herokuapp.com", schemes = listOf("https"))
         allowHost("www.dailyhabitsmaster.com", schemes = listOf("https"))
         allowHost("localhost:3000", schemes = listOf("http", "https"))
+        allowHost("localhost:3000/habits", schemes = listOf("http", "https"))
         allowHost("localhost:8000", schemes = listOf("http", "https"))
         allowSameOrigin = true
         allowNonSimpleContentTypes = true
