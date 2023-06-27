@@ -1,4 +1,4 @@
-package com.me.postfetcher.database
+package com.me.habitapp.database
 
 import org.flywaydb.core.Flyway
 import java.net.URI

@@ -1,6 +1,7 @@
 package com.me.habitapp.database.model
 
 import com.me.habitapp.database.getDateOfWeek
+import com.sun.org.apache.xalan.internal.lib.ExsltDatetime.date
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
