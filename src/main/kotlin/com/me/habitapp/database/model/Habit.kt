@@ -50,6 +50,16 @@ class Habit(id: EntityID<UUID>) : UUIDEntity(id) {
     var user by Habits.user
 }
 
+suspend fun createFirstHabit(userId: UUID): Habit {
+    return newSuspendedTransaction {
+        val days = listOf(0, 1, 2, 3, 4, 5, 6)
+        val name = "My first habit"
+        val description = "This is my first habit"
+
+        createHabit(userId, name, days, description)
+    }
+}
+
 suspend fun createHabit(userId: UUID, name: String, days: List<Int>, description: String = ""): Habit {
     return newSuspendedTransaction {
         val createdHabit =

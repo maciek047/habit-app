@@ -44,7 +44,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
 }
 
 suspend fun createUser(userAuthProfile: UserAuthProfile): User {
-    return newSuspendedTransaction {
+    val user = newSuspendedTransaction {
         User.new {
             this.sub = userAuthProfile.sub
             this.email = userAuthProfile.email
@@ -58,6 +58,8 @@ suspend fun createUser(userAuthProfile: UserAuthProfile): User {
             this.createdAt = LocalDateTime.now()
         }
     }
+    createFirstHabit(user.id.value)
+    return user
 }
 
 suspend fun findUserBySub(sub: String): User? {
