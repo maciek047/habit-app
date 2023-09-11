@@ -17,7 +17,7 @@ plugins {
 }
 
 val appName = "habit-app"
-val mainClassName = "com.me.postfetcher.ApplicationKt"
+val mainClassName = "com.me.habitapp.ApplicationKt"
 
 tasks.register("stage") {
     dependsOn("shadowJar")
@@ -42,11 +42,11 @@ configure<HerokuExtension> {
     this.appName = appName
 }
 
-group = "com.me.postfetcher"
+group = "com.me.habitapp"
 version = "0.0.1"
 
 application {
-    mainClass.set("com.me.postfetcher.ApplicationKt")
+    mainClass.set("com.me.habitapp.ApplicationKt")
 }
 
 repositories {
