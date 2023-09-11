@@ -16,8 +16,8 @@ object DatabaseConfig {
 
         Database.connect(dbUrl, driver = "org.postgresql.Driver", user = username, password = password)
 
-         val flyway = FlywayConfig.configure()
-         flyway.migrate()
+//         val flyway = FlywayConfig.configure()
+//         flyway.migrate()
     }
 }
 
