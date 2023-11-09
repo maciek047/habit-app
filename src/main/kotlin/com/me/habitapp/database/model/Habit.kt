@@ -70,12 +70,6 @@ suspend fun createHabit(userId: UUID, name: String, days: List<Int>, description
     }
 }
 
-suspend fun fetchHabits(userId: UUID): List<Habit> {
-    return newSuspendedTransaction {
-        Habit.find { Habits.user eq userId }.sortedBy { Habits.createdAt }.toList()
-    }
-}
-
 suspend fun fetchTodayHabits(userId: UUID): List<HabitTaskDto> {
     val today = LocalDate.now().dayOfWeek.value - 1
     return fetchHabitTasksForGivenDay(userId, today)
@@ -103,14 +97,12 @@ suspend fun fetchHabitMetrics(userId: UUID): HabitMetricsResponse {
     val startDate = LocalDate.now().minusMonths(3)
     val endDate = LocalDate.now()
 
-    // Define aliases for the aggregated columns
     val totalCountAlias = executionDate.count().alias("total_count")
     val completedCountAlias = Sum(
         Case().When(HabitExecutions.completed eq true, intLiteral(1)).Else(intLiteral(0)),
         IntegerColumnType()
     ).alias("completed_count")
 
-    // Use SQL aggregation functions to compute the metrics directly
     val query = HabitExecutions
         .slice(
             executionDate,
@@ -124,7 +116,6 @@ suspend fun fetchHabitMetrics(userId: UUID): HabitMetricsResponse {
         .groupBy(executionDate)
         .orderBy(executionDate)
 
-    // Execute the query and map the results directly to HabitMetricsDto
     val daysList = newSuspendedTransaction {
         query.map { row ->
             val date = row[executionDate].toString()
@@ -172,23 +163,18 @@ suspend fun fetchHabitStats(userId: UUID, startDate: LocalDate, endDate: LocalDa
 }
 
 suspend fun fetchHabitsWithPlannedDays(userId: UUID): List<WeeklyHabitDto> {
-    // Fetch all habits for the user
     val userHabits = newSuspendedTransaction {
         Habit.find { Habits.user eq userId }.toList()
     }
 
-    // Get habit IDs
     val habitIds: List<UUID> = userHabits.map { it.id.value }
 
-    // Fetch all PlannedHabitDays for these habit IDs in a single query
     val allPlannedDays = newSuspendedTransaction {
         PlannedHabitDay.find { PlannedHabitDays.habitId inList habitIds }.toList()
     }
 
-    // Group the planned days by habit ID for efficient lookup
     val plannedDaysByHabitId: Map<UUID, List<PlannedHabitDay>> = allPlannedDays.groupBy { it.habitId.value }
 
-    // Construct WeeklyHabitDto for each habit
     return userHabits.map { habit ->
         val plannedDays = plannedDaysByHabitId[habit.id.value].orEmpty().map { plannedDay ->
             HabitDayDto(
@@ -222,14 +208,14 @@ suspend fun editHabit(userId: UUID, id: String, name: String, days: List<Int>, c
 
         HabitExecutions.deleteWhere {
             (HabitExecutions.habitId eq habitId) and
-                    (HabitExecutions.executionDate inList habitDaysToDelete) and
-                    (HabitExecutions.completed eq false)
+                    (executionDate inList habitDaysToDelete) and
+                    (completed eq false)
         }
 
         // Delete PlannedHabitDays for days no longer in the plan
         PlannedHabitDays.deleteWhere {
             (PlannedHabitDays.habitId eq habitId) and
-                    (PlannedHabitDays.day notInList days)
+                    (day notInList days)
         }
 
         // Fetch existing planned days
@@ -237,24 +223,20 @@ suspend fun editHabit(userId: UUID, id: String, name: String, days: List<Int>, c
             PlannedHabitDays.habitId eq habitId
         }.map { it.day }
 
-        // For days that need to be added
         val newDays = days.subtract(existingPlannedDays.toSet())
         if (newDays.isNotEmpty()) {
             createPlannedHabitDaysBatch(userId, habitId, newDays)
         }
 
-        // Fetch PlannedHabitDays to be updated and update them
         val plannedDaysToUpdate = PlannedHabitDay.find {
             (PlannedHabitDays.habitId eq habitId) and
                     (PlannedHabitDays.day inList days.intersect(existingPlannedDays).toList())
         }.toList()
 
-        // Update the 'completed' status of each planned day in memory
         plannedDaysToUpdate.forEach { plannedDay ->
             plannedDay.completed = completedDays.contains(plannedDay.day)
         }
 
-        // Update habit details
         val habit = Habit.findById(habitId)?.apply {
             this.name = name
             this.description = description

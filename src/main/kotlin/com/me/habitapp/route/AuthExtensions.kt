@@ -10,36 +10,13 @@ import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.application.ApplicationCallPipeline
-import io.ktor.server.application.call
-import io.ktor.server.auth.authenticate
-import io.ktor.server.auth.authentication
-import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.request.header
-import io.ktor.server.routing.Route
-import io.ktor.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-
-fun Route.authenticateUser(
-    vararg configurations: String? = arrayOf("auth0"),
-    optional: Boolean = false,
-    build: Route.() -> Unit
-): Route {
-    val authRoute = authenticate(*configurations, optional = optional) { build() }
-    authRoute.intercept(ApplicationCallPipeline.Plugins) {
-        val user = call.ensureUserExists()
-        call.attributes.put(UserKey, user)
-    }
-
-    return authRoute
-}
-
-val UserKey = AttributeKey<User>("User")
 
 fun String.toUserAuthProfile(): UserAuthProfile {
     val json = Json.parseToJsonElement(this).jsonObject
@@ -56,13 +33,6 @@ fun String.toUserAuthProfile(): UserAuthProfile {
     )
 }
 
-suspend fun ApplicationCall.ensureUserExists(): User {
-    val principal = authentication.principal<JWTPrincipal>()
-    val sub = principal?.payload?.subject ?: throw Exception("No sub found in JWT")
-
-    return findUserBySub(sub) ?: createUserFromAuthProfile(accessTokenFromCall(this))
-}
-
 suspend fun createUserFromAuthProfile(accessToken: String): User =
     try {
         createUser(getUserInfoFromToken(accessToken))
@@ -72,7 +42,6 @@ suspend fun createUserFromAuthProfile(accessToken: String): User =
             findUserBySub(getUserInfoFromToken(accessToken).sub) ?: throw Exception("Failed to create user")
         }
     }
-
 
 fun accessTokenFromCall(call: ApplicationCall): String {
     return call.request.header("Authorization")?.removePrefix("Bearer ")

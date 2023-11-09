@@ -205,7 +205,6 @@ object UserCache {
     fun getUser(sub: String): User? {
         val cachedUser = cache[sub] ?: return null
         if (System.currentTimeMillis() - cachedUser.timestamp > cacheDuration) {
-            // Cache entry is too old and should be evicted
             cache.remove(sub)
             return null
         }
@@ -217,16 +216,13 @@ object UserCache {
     }
 
     fun updateUser(sub: String, user: User) {
-        // Update the user in the cache
         cache[sub] = CachedUser(user, System.currentTimeMillis())
     }
 
     fun invalidateUser(sub: String) {
-        // Remove the user from the cache
         cache.remove(sub)
     }
 
-    // Optionally, add a method to periodically clean up the cache
     fun cleanup() {
         val now = System.currentTimeMillis()
         cache.entries.removeIf { now - it.value.timestamp > cacheDuration }
