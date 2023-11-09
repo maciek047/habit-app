@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.`java-time`.date
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.time.LocalDate
@@ -38,24 +39,25 @@ import java.util.UUID
         var user by HabitExecutions.user
     }
 
+
 suspend fun ensureHabitExecutionsForCurrentWeekExist(userId: UUID) {
     val startDate = getDateOfWeek(1)
     val endDate = getDateOfWeek(7)
 
     if (getHabitExecutionsByDateRange(userId, startDate, endDate).isEmpty()) {
         newSuspendedTransaction {
-            PlannedHabitDay.find { PlannedHabitDays.user eq userId }.forEach {
-                createHabitExecution(
-                    userId = userId,
-                    habitId = it.habitId.value,
-                    plannedHabitDayId = it.id.value,
-                    dayOfWeek = it.day,
-                    completed = it.completed
-                )
+            val plannedDays = PlannedHabitDay.find { PlannedHabitDays.user eq userId }.toList()
+            HabitExecutions.batchInsert(plannedDays) { plannedDay ->
+                this[HabitExecutions.habitId] = plannedDay.habitId
+                this[HabitExecutions.plannedHabitDayId] = plannedDay.id
+                this[HabitExecutions.executionDate] = getDateOfWeek(plannedDay.day + 1)
+                this[HabitExecutions.completed] = false
+                this[HabitExecutions.user] = EntityID(userId, Users)
             }
         }
     }
 }
+
 
 suspend fun getHabitExecutionsByDateRange(
     userId: UUID,
@@ -88,3 +90,21 @@ fun createHabitExecution(
     }
 
 }
+
+fun createHabitExecutionsBatch(habitExecutionsData: List<HabitExecutionData>) {
+        HabitExecutions.batchInsert(habitExecutionsData) { data ->
+            this[HabitExecutions.habitId] = EntityID(data.habitId, Habits)
+            this[HabitExecutions.plannedHabitDayId] = EntityID(data.plannedHabitDayId, PlannedHabitDays)
+            this[HabitExecutions.executionDate] = getDateOfWeek(data.dayOfWeek + 1)
+            this[HabitExecutions.completed] = data.completed
+            this[HabitExecutions.user] = EntityID(data.userId, Users)
+        }
+}
+
+data class HabitExecutionData(
+    val userId: UUID,
+    val habitId: UUID,
+    val plannedHabitDayId: UUID,
+    val dayOfWeek: Int,
+    val completed: Boolean = false
+)

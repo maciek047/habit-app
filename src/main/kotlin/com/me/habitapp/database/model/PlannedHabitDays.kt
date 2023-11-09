@@ -6,6 +6,7 @@ import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import java.time.LocalDateTime
 import java.util.UUID
@@ -74,6 +75,37 @@ fun createPlannedHabitDay(userId: UUID, habitId: UUID, day: Int): PlannedHabitDa
     }
 
         return plannedDay
+}
+
+fun createPlannedHabitDaysBatch(userId: UUID, habitId: UUID, days: Collection<Int>) {
+    // Create and insert planned days in batch
+    val insertedPlannedDays = PlannedHabitDays.batchInsert(days) { day ->
+        this[PlannedHabitDays.habitId] = EntityID(habitId, Habits)
+        this[PlannedHabitDays.day] = day
+        this[PlannedHabitDays.completed] = false
+        this[PlannedHabitDays.user] = EntityID(userId, Users)
+    }
+
+    // Prepare data for habit executions
+    val habitExecutionsData = insertedPlannedDays.mapNotNull { insertedDay ->
+        val dayOfWeek = insertedDay[PlannedHabitDays.day]
+        val dateOfExecution = getDateOfWeek(dayOfWeek + 1)
+        if (!dateOfExecution.isBefore(LocalDateTime.now().toLocalDate())) {
+            HabitExecutionData(
+                userId = userId,
+                habitId = habitId,
+                plannedHabitDayId = insertedDay[PlannedHabitDays.id].value,
+                dayOfWeek = dayOfWeek,
+                completed = false
+            )
+        } else null
+    }
+
+    // Create habit executions in batch if needed
+    if (habitExecutionsData.isNotEmpty()) {
+        createHabitExecutionsBatch(habitExecutionsData)
+    }
+
 }
 
 suspend fun fetchPlannedHabitDaysById(habitId: UUID): List<PlannedHabitDay> {

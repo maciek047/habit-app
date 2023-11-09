@@ -4,12 +4,12 @@ import com.auth0.jwk.JwkProviderBuilder
 import com.me.habitapp.common.dependency.Dependencies
 import com.me.habitapp.common.dependency.dependencies
 import com.me.habitapp.database.DatabaseConfig
+import com.me.habitapp.route.UserCache
 import com.me.habitapp.route.mainRouting
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
+import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTCredential
 import io.ktor.server.auth.jwt.JWTPrincipal
@@ -24,6 +24,7 @@ import io.ktor.server.routing.routing
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 fun main() = runBlocking<Unit>(Dispatchers.Default) {
@@ -38,14 +39,15 @@ fun main() = runBlocking<Unit>(Dispatchers.Default) {
 
 data class UserSession(val userId: String)
 
-data class AuthConfig(
-    val domain: String,
-    val clientId: String,
-    val clientSecret: String,
-    val audience: String,
-    val callbackUrl: String,
-    val sessionSignKey: String
-)
+//data class AuthConfig(
+//    val domain: String,
+//    val clientId: String,
+//    val clientSecret: String,
+//    val audience: String,
+//    val callbackUrl: String,
+//    val sessionSignKey: String
+//)
+
 
 fun validateCreds(credential: JWTCredential): JWTPrincipal? {
     val containsAudience = credential.payload.audience.contains(System.getenv("AUTH0_AUDIENCE"))
@@ -67,14 +69,14 @@ fun Application.setup(dep: Dependencies) {
     val callbackUrl = System.getenv("AUTH0_CALLBACK_URL")
     val sessionSignKey = System.getenv("SESSION_SIGN_KEY")
 
-    val authConfig = AuthConfig(
-        domain = domain,
-        clientId = clientId,
-        clientSecret = clientSecret,
-        audience = audience,
-        callbackUrl = callbackUrl,
-        sessionSignKey = sessionSignKey
-    )
+//    val authConfig = AuthConfig(
+//        domain = domain,
+//        clientId = clientId,
+//        clientSecret = clientSecret,
+//        audience = audience,
+//        callbackUrl = callbackUrl,
+//        sessionSignKey = sessionSignKey
+//    )
 
     val jwkProvider = JwkProviderBuilder("https://$domain/")
         .cached(10, 24, TimeUnit.HOURS)
@@ -129,4 +131,8 @@ fun Application.module() {
     install(XForwardedHeaders)
     install(ForwardedHeaders)
     setup(dependencies())
+    environment.monitor.subscribe(ApplicationStarted) {
+        val executor = Executors.newSingleThreadScheduledExecutor()
+        executor.scheduleAtFixedRate({ UserCache.cleanup() }, 30, 30, TimeUnit.MINUTES)
+    }
 }

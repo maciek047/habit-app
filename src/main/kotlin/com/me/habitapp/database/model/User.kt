@@ -5,13 +5,8 @@ import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.UUIDTable
-import org.jetbrains.exposed.sql.Expression
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.Transaction
 import org.jetbrains.exposed.sql.`java-time`.datetime
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
-import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -66,52 +61,4 @@ suspend fun findUserBySub(sub: String): User? {
     return newSuspendedTransaction {
         User.find { Users.sub eq sub }.firstOrNull()
     }
-}
-
-suspend fun Users.upsert(userAuthProfile: UserAuthProfile): User {
-    val values = arrayOf(
-        Users.sub to userAuthProfile.sub,
-        Users.name to userAuthProfile.name,
-        Users.email to userAuthProfile.email,
-        Users.emailVerified to userAuthProfile.emailVerified,
-        Users.locale to userAuthProfile.locale,
-        Users.givenName to userAuthProfile.givenName,
-        Users.familyName to userAuthProfile.familyName,
-        Users.nickname to userAuthProfile.nickname,
-        Users.picture to userAuthProfile.picture
-    )
-
-    val updateSetExpr = values.joinToString(", ") { "${it.first.name} = EXCLUDED.${it.first.name}" }
-
-    val insertStatement = "INSERT INTO ${tableName} (${values.joinToString(", ") { it.first.name }}) " +
-            "VALUES (${values.joinToString(", ") { "?" }}) " +
-            "ON CONFLICT (${Users.sub.name}) DO UPDATE SET $updateSetExpr " +
-            "RETURNING *"
-
-    val row = newSuspendedTransaction {
-        execAndMap(insertStatement, values.map { it.second }) { rs ->
-            if (rs.next()) {
-                ResultRow.create(rs, this@upsert.columnIndexMapping())
-            } else {
-                throw Exception("Failed to upsert the user")
-            }
-        }
-    }
-    return User.wrapRow(row)
-}
-
-fun <T : Any> Transaction.execAndMap(sql: String, params: List<Any?>, transform: (ResultSet) -> T): T {
-    return (connection as java.sql.Connection).prepareStatement(sql).apply {
-        params.forEachIndexed { index, value ->
-            setObject(index + 1, value)
-        }
-    }.use { stmt ->
-        stmt.executeQuery().use { rs ->
-            transform(rs)
-        }
-    }
-}
-
-fun Table.columnIndexMapping(): Map<Expression<*>, Int> {
-    return this.columns.associateWith { columns.indexOf(it) }
 }

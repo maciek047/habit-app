@@ -73,6 +73,7 @@ suspend fun createUserFromAuthProfile(accessToken: String): User =
         }
     }
 
+
 fun accessTokenFromCall(call: ApplicationCall): String {
     return call.request.header("Authorization")?.removePrefix("Bearer ")
         ?: throw Exception("No access token found")
